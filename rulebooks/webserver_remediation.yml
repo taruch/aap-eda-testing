@@ -10,6 +10,11 @@
     - name: restart web server
       condition: event.alert.labels.job == "fastapi" and event.alert.status == "firing"
       action:
-        run_playbook:
-          name: ansible.eda.start_app
+        run_job_template:
+          name: Demo Job Template
+          organization: Default
+          job_args:
+            extra_vars:
+               message: from eda
+               sleep: 1
 ...
