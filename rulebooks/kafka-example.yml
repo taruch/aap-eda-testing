@@ -4,9 +4,9 @@
   ## Define our source for events
   sources:
     - ansible.eda.kafka:
-        host: kafka.lab.cheeseburgia.com
+        host: amqstreams.local
         port: 9092
-        topic: test
+        topic: eda-topic
         group_id:
 
   rules:
@@ -14,5 +14,6 @@
       condition: event.message != ""
       action:
         run_job_template:
-          name: {insert here}
+          name: SUBMIT FEEDBACK
+
 ...
