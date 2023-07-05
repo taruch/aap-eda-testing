@@ -11,7 +11,9 @@
 
   rules:
     - name: receive event
-      condition: event.message != ""
+      #condition: event.message != ""
+      condition: event.payload.message == "fastapi"
+
 
       action:
         run_job_template:
