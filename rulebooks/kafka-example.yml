@@ -15,7 +15,7 @@
 
       action:
         run_job_template:
-          name: SUBMIT FEEDBACK
+          name: EDA Test
           organization: Default
           job_args:
             extra_vars:
