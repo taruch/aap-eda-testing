@@ -4,7 +4,7 @@
   ## Define our source for events
   sources:
     - ansible.eda.kafka:
-        host: amqstreams.local
+        host: "{{ kafka_host }}"
         port: 9092
         topic: eda-topic
         group_id:
