@@ -11,11 +11,22 @@
       #condition: event.alert.labels.job == "fastapi" and event.alert.status == "firing"
       condition: event.payload.message == "fastapi"
       action:
+#        run_job_template:
+#          name: Demo Job Template
+#          organization: Default
+#          job_args:
+#            extra_vars:
+#               message: from eda
+#               sleep: 1
+
         run_job_template:
-          name: Demo Job Template
+          name: SUBMIT FEEDBACK
           organization: Default
           job_args:
             extra_vars:
                message: from eda
                sleep: 1
+
+
+
 ...
