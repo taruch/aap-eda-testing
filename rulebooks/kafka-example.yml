@@ -12,8 +12,14 @@
   rules:
     - name: receive event
       condition: event.message != ""
+
       action:
         run_job_template:
           name: SUBMIT FEEDBACK
+          organization: Default
+          job_args:
+            extra_vars:
+               message: from eda
+               sleep: 1
 
 ...
