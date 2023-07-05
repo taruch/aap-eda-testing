@@ -12,7 +12,9 @@
   rules:
     - name: receive event
       #condition: event.message != ""
-      condition: event.payload.message == "fastapi"
+      #condition: event.payload.message == "fastapi"
+      condition: event.body == "fastapi"
+
 
 
       action:
