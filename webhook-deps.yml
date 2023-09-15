@@ -1,0 +1,10 @@
+---
+- name: Configure firewall for webhook source type
+  hosts: localhost
+  tasks:
+  - name: Configure firewall on EDA controller
+    ansible.posix.firewalld:
+       port: "5000/tcp"
+       state: enabled
+       immediate: true
+       permanent: true

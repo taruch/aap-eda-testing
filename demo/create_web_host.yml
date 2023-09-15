@@ -1,0 +1,41 @@
+---
+- name: Create Default Web Host
+  hosts: all
+  vars:
+    doc_root: '/var/www/html'
+    website: 'edademo'
+  vars_files:
+
+
+
+  tasks:
+    - name: Install httpd package
+      ansible.builtin.yum:
+        name: httpd
+        state: installed
+      check_mode: false
+    
+    - name: Create base web directory
+      ansible.builtin.file:
+        path: "{{ doc_root }}/edademo"
+        state: directory
+        mode: "0775"
+      check_mode: false
+    
+    - name: Copy .htaccess
+      ansible.builtin.copy:
+        dest: "{{ doc_root }}/edademo/.htaccess"
+        content: Options +Indexes
+        mode: "0644"
+      check_mode: false
+
+    - name: Synchronization of files on the control machine to dest on the remote hosts
+      ansible.posix.synchronize:
+        src: ./files/
+        dest: "{{ doc_root }}/edademo"
+    
+    - name: Install httpd service
+      ansible.builtin.service:
+        name: httpd
+        state: started
+      check_mode: false

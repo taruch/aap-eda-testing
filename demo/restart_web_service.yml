@@ -1,0 +1,14 @@
+---
+- name: Restart and validate the web host
+  hosts: all
+  become: true
+
+  tasks:
+    - name: Restart Web Service
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
+
+
+
+...

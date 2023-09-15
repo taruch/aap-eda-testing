@@ -1,0 +1,29 @@
+---
+- name: AWS SQS Source Example
+  hosts: all
+  sources:
+    - ansible.eda.aws_sqs:
+        region: "{{ aws_region }}"
+        access_key: "{{ AWS_access_key_ID }}"
+        secret_key: "{{ AWS_secret_access_key }}"
+        name: "{{ AWS_SQS_queue }}"
+        #region: us-east-1
+        #session_token: Optional STS session token for use with temporary credentials
+        #endpoint_url:  Optional URL to connect to instead of the default AWS endpoints
+        #delay_seconds: The SQS long polling duration. Set to 0 to disable. Defaults to 2.
+  
+  rules:
+    - name: res
+      condition: event.payload.message == "fastapi"
+      action:
+        run_job_template:
+          name: EDA Test
+          organization: Default
+          job_args:
+            extra_vars:
+               message: from EDA AWS SQS Source 
+               sleep: 1
+
+
+
+...

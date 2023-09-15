@@ -1,6 +1,6 @@
 ---
 - name: Read messages from a kafka topic and act on them
-  hosts: kafka.example.com
+  hosts: all
   ## Define our source for events
   sources:
     - ansible.eda.kafka:
@@ -11,11 +11,11 @@
 
   rules:
     - name: receive event
-      #condition: event.message != ""
-      #condition: event.payload.message == "fastapi"
-      condition: event.body == "fastapi"
-
-
+      #condition: event.body != ""
+      #condition: event.body == "broke"
+      #To check if the pattern exists anywhere in the string. Regex supported
+      #condition: event.body is search(pattern,ignorecase=true)
+      condition: event.body contains "broke"
 
       action:
         run_job_template:
@@ -23,7 +23,7 @@
           organization: Default
           job_args:
             extra_vars:
-               message: from eda
+               message: From EDA kafka source
                sleep: 1
 
 ...

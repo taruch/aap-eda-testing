@@ -1,0 +1,35 @@
+---
+- name: AlertManager Source Example
+  hosts: all
+  sources:
+    - ansible.eda.aws_cloudtrail:
+        region: us-east-1
+        access_key:    "{{ AWS_access_key_ID }}"
+        secret_key:    "{{ AWS_secret_access_key }}"
+        #session_token: Optional STS session token for use with temporary credentials
+        #endpoint_url:  Optional URL to connect to instead of the default AWS endpoints
+        #delay_seconds: The number of seconds to wait between polling (default 10sec)
+
+        lookup_attributes:
+            - AttributeKey: 'EventSource'
+              AttributeValue: 'ec2.amazonaws.com'
+            - AttributeKey: 'ReadOnly'
+              AttributeValue: 'true'
+        event_category: management
+ 
+
+  rules:
+    - name: res
+      condition: event.payload.message == "fastapi"
+      action:
+        run_job_template:
+          name: EDA Test
+          organization: Default
+          job_args:
+            extra_vars:
+               message: from eda
+               sleep: 1
+
+
+
+...

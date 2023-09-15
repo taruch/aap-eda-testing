@@ -1,0 +1,55 @@
+---
+- name: webhook Source Example
+  hosts: all
+  sources:
+    - name: listen for alerts
+      ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5000
+        # host:     The hostname to listen to. Set to 0.0.0.0 to listen on all
+        #           interfaces. Defaults to 127.0.0.1
+        # port:     The TCP port to listen to.  Defaults to 5000
+        # token:    The optional authentication token expected from client
+        # certfile: The optional path to a certificate file to enable TLS support
+        # keyfile:  The optional path to a key file to be used together with certfile
+        # password: The optional password to be used when loading the certificate chain
+      filters:
+        - ansible.eda.json_filter:
+            exclude_keys: ['sender', 'owner']
+        - ansible.eda.dashes_to_underscores:
+
+  rules:
+
+    - name: Debug Webook Event
+      condition: 
+        any:
+          - event.payload is defined
+      action:
+        debug:
+
+    - name: Get push event details 
+      condition: event.meta.headers.X_Gite
+      #condition: event.payload.message == "fastapi"
+      action:
+        run_job_template:
+          name: EDA Test
+          organization: Default
+          job_args:
+            extra_vars:
+               message: From EDA webhook source
+               sleep: 1
+
+
+    - name: 
+      condition: event.payload is defined
+      #condition: event.payload.message == "fastapi"
+      action:
+        run_job_template:
+          name: EDA Test
+          organization: Default
+          job_args:
+            extra_vars:
+               message: From EDA webhook source
+               sleep: 1
+
+...

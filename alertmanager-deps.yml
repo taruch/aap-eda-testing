@@ -1,0 +1,10 @@
+---
+- name: Configure firewall for alertmanager source type
+  hosts: localhost
+  tasks:
+  - name: Configure firewall on EDA controller
+    ansible.posix.firewalld:
+       port: "8000/tcp"
+       state: enabled
+       immediate: true
+       permanent: true
