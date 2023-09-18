@@ -19,7 +19,7 @@
  
 
   rules:
-    - name: res
+    - name: Alertmanager AWS Cloutdrail Resolution
       condition: event.payload.message == "fastapi"
       action:
         run_job_template:

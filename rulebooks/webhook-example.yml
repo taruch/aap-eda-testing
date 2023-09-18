@@ -49,7 +49,7 @@
                message: From EDA webhook source
                sleep: 1
 
-    - name: 
+    - name: Event Payload is defined
       condition: event.payload is defined
       #condition: event.payload.message == "fastapi"
       action:

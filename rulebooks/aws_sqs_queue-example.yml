@@ -13,7 +13,7 @@
         #delay_seconds: The SQS long polling duration. Set to 0 to disable. Defaults to 2.
   
   rules:
-    - name: res
+    - name: AWS SQS Source Resolution
       condition: event.payload.message == "fastapi"
       action:
         run_job_template:
