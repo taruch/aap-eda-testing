@@ -1,0 +1,37 @@
+---
+- name: Listen for events on a webhook
+  hosts: all
+  sources:
+    - dynatrace.event_driven_ansible.dt_esa_api:
+        dt_api_host: "https://abc.live.dynatrace.com" or "https://abc.apps.dynatrace.com"
+        dt_api_token: "asjfsjkfjfjh"
+        delay: 60 (Default is 1 min) i.e plugin runs every 1 minute
+
+  rules:
+
+  - name: Debug Webhook Event
+    condition: 
+     any:
+     - event.payload is defined
+    action:
+     debug:
+
+    #- name: Problem payload Dynatrace for CPU issue
+    #  condition: event.title contains "CPU saturation"
+    #  action:
+    #    run_job_template:
+    #      name: "Remediate CPU saturation issue"
+    #      organization: "Default"
+    #- name: Problem payload Dynatrace for App Failure rate increase issue
+    #  condition: event.title contains "Failure rate increase"
+    #  action:
+    #    run_job_template:
+    #      name: "Remediate Application issue"
+    #      organization: "Default"
+    #- name: Update comments in Dynatrace
+    #  condition: 
+    #    all: 
+    #      - event.status == "OPEN"
+    #  action:
+    #    run_playbook:
+    #      name: dt-update-comments.yml
