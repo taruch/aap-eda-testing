@@ -1,5 +1,5 @@
 ---
-- name: Listen for events on a webhook
+- name: Listen for events on Dynatrace API
   hosts: all
   sources:
   - dynatrace.event_driven_ansible.dt_esa_api:
@@ -9,7 +9,7 @@
 
   rules:
 
-  - name: Debug Webhook Event
+  - name: Debug Event from API
     condition: 
      any:
      - event.payload is defined
