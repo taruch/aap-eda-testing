@@ -2,10 +2,10 @@
 - name: Listen for events on a webhook
   hosts: all
   sources:
-    - dynatrace.event_driven_ansible.dt_esa_api:
-        dt_api_host: "https://abc.live.dynatrace.com" or "https://abc.apps.dynatrace.com"
-        dt_api_token: "asjfsjkfjfjh"
-        delay: 60 (Default is 1 min) i.e plugin runs every 1 minute
+  - dynatrace.event_driven_ansible.dt_esa_api:
+      dt_api_host: "https://abc.live.dynatrace.com" or "https://abc.apps.dynatrace.com"
+      dt_api_token: "asjfsjkfjfjh"
+      delay: 60 (Default is 1 min) i.e plugin runs every 1 minute
 
   rules:
 
