@@ -11,10 +11,10 @@
 
   - name: Debug Event from API
     condition: 
-     any:
-     - event.payload is defined
+      any:
+      - event.payload is defined
     action:
-     debug:
+      debug:
 
     #- name: Problem payload Dynatrace for CPU issue
     #  condition: event.title contains "CPU saturation"
