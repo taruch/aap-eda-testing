@@ -1,0 +1,10 @@
+    - name: Dynatrace | Sample rule 4
+      condition:
+          - event.impactedEntities is selectattr('name', '==', "")
+      action:
+        run_job_template:
+          name: EDA Dynatrace Test 2
+          organization: Default
+          job_args:
+            extra_vars:
+              _hosts: "{{ (event.entityTags | selectattr('key', '==', 'Environment') | map(attribute='value') | list)[0] }}"
