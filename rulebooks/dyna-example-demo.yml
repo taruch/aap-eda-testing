@@ -1,0 +1,86 @@
+---
+- name: Listen for events on a webhook
+  hosts: all
+  sources:
+    - dynatrace.event_driven_ansible.dt_esa_api:
+        # dt_api_host: "https://abc.live.dynatrace.com" or "https://abc.apps.dynatrace.com"
+        # dt_api_token: "asjfsjkfjfjh"
+        dt_api_host: "{{ _dt_api_host }}"
+        dt_api_token: "{{ _dt_api_token }}"
+        #delay: 60 (Default is 1 min) i.e plugin runs every 1 minute
+
+  rules:
+    - name: Dynatrace | Sample rule part 1
+      condition: event.title is defined
+      action:
+        post_event:
+          event:
+            # edaTest: "{{ event.impactedEntities | selectattr('name', '==', 'NFLIS Health Check') | list }}"
+            process_group: "{{ event.impactedEntities | attr('entityId') | |  map(attribute='entityId') | list)[0] }}"
+            # edaTest: "{{ (event.impactedEntities | selectattr('name', '==', 'NFLIS Health Check') | map(attribute='entityId') | list)[0] }}"
+
+    - name: Problem payload Dynatrace for CPU issue
+      condition: event.title is defined
+      action:
+        debug:
+          msg: "{{ process_group }}"
+  
+    - name: Problem payload Dynatrace for CPU issue
+      condition: event.title contains 'Process unavailable'
+      action:
+        debug:
+#        run_job_template:
+#          name: "Remediate CPU saturation issue"
+#          organization: "Default"
+    - name: Problem payload Dynatrace for App Failure rate increase issue
+      condition: event.title contains "Failure rate increase"
+      action:
+        debug:
+#        run_job_template:
+#          name: "Remediate Application issue"
+#          organization: "Default"
+    - name: Update comments in Dynatrace
+      condition: 
+        all: 
+          - event.status == "OPEN"
+      action:
+        debug:
+#        run_playbook:
+#          name: dt-update-comments.yml
+#
+
+
+#    - name: Dynatrace | Sample rule part 1
+#      condition: event.title == "SSL certificate expiration"
+#      action:
+#        post_event:
+#          event:
+#            edaTest: "{{ event.impactedEntities | selectattr('name', '==', 'NFLIS Health Check') | list }}"
+#            #edaTest: "{{ event.impactedEntities | attr('entityId') | |  map(attribute='entityId') | list)[0] }}"
+#            #edaTest: "{{ (event.impactedEntities | selectattr('name', '==', 'NFLIS Health Check') | map(attribute='entityId') | list)[0] }}"
+
+    - name: Dynatrace | Sample rule part 1.2
+      condition: event.payload is defined
+      action:
+        debug:
+#        run_job_template:
+#          name: EDA Dynatrace Test 3
+#          organization: Default
+#          job_args:
+#            extra_vars:
+#              #_hosts: "{{ (event.entityTags | selectattr('key', '==', 'Application') | map(attribute='value') | list)[0] }}"
+#              edaTest: "{{ event.edaTest }}"
+
+    - name: Dynatrace | Sample rule
+      condition:
+        all:
+          - event.impactedEntities is selectattr('name', '==', "Qualys Cloud Agent")
+      action:
+        debug:
+#        run_job_template:
+#          name: EDA Dynatrace Test 2
+#          organization: Default
+#          job_args:
+#            extra_vars:
+#              _hosts: "{{ (event.entityTags | selectattr('key', '==', 'Environment') | map(attribute='value') | list)[0] }}"
+
