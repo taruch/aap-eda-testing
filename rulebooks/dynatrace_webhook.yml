@@ -9,12 +9,13 @@
 
   rules:
 
-    # - name: Get push events on main
-    #   condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
-    #   action:
-    #     post_event:
-    #       event:
-    #         category: "{{ event.payload.eventData['event.category'] }}"
+    - name: Get push events on main
+      condition: event.payload is defined
+      action:
+        post_event:
+          event:
+            display_id: "{{ event.payload.eventData['display_id'] }}"
+            _host: "{{ event.payload.eventData['host.name'] }}"
 
 
     # - name: API Endpoint not available
@@ -24,7 +25,8 @@
     #       msg: "{{ category }}"
 
     - name: Event payload is defined
-      condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+      # condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+      condition: event.display_id is defined
       action:
         run_job_template:
           name: EDA Test
@@ -35,9 +37,10 @@
               message: From EDA webhook source
               sleep: 1
         # run_playbook:
-          # name: /tmp/demo/test_eda.yml
-          # extra_vars:
-          #   host_msg: "{{ event.payload.eventData['host.name'] }}"
-          #   message: From EDA webhook source
+        #   name: /tmp/demo/test_eda.yml
+        #   extra_vars:
+        #     display_id: "{{ event.display_id }}"
+        #     host_msg: "{{ event._host }}"
+        #     message: From EDA webhook source
 
 ...
