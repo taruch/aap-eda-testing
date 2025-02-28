@@ -1,10 +1,10 @@
 ---
 - name: Test EDA
-  hosts: "{{ _host }}"
+  hosts: "{{ _host | default('localhost') }}"
   become: false
   gather_facts: false
   tasks:
 
   - name: Debug EDA Event Data
     ansible.builtin.debug:
-      msg: "{{ event_data }}"
+      msg: "{{ message }}"
