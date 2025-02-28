@@ -4,11 +4,14 @@
   become: true
 
   tasks:
+    - name: Restart JBOSS
+      ansible.builtin.service:
+        name: jws.service
+        state: restarted
+
     - name: Restart Web Service
       ansible.builtin.service:
         name: httpd
         state: restarted
-
-
 
 ...

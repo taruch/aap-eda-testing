@@ -1,0 +1,18 @@
+---
+- name: Stop JBOSS service
+  hosts: "{{ _hosts }}"
+  gather_facts: false
+  become: true
+
+  tasks:
+    - name: Stop JBOSS service
+      ansible.builtin.service:
+        name: jws.service
+        state: stopped
+        enabled: true
+
+    - name: Stop httpd service
+      ansible.builtin.service:
+        name: httpd.service
+        state: stopped
+        enabled: true
