@@ -24,7 +24,7 @@
           organization: Default
           job_args:
             extra_vars:
-              host_msg: "{{ event.payload.eventData }}"
+              host_msg: "{{ event.payload.eventData['host.name'] }}"
               message: From EDA webhook source
               sleep: 1
 
