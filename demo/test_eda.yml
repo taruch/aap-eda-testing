@@ -5,6 +5,17 @@
   gather_facts: false
   tasks:
 
-  - name: Debug EDA Event Data
-    ansible.builtin.debug:
-      msg: "{{ host_msg }}"
+    - name: Debug EDA Event Data
+      ansible.builtin.debug:
+        msg: "{{ host_msg }}"
+
+    - name: Debug EDA Event Data
+      ansible.builtin.debug:
+        msg: "{{ host_msg | type_debug }}"
+
+    - name: Debug EDA Event Data
+      ansible.builtin.debug:
+        msg: "{{ host_msg.eventData }}"
+
+...
+s
