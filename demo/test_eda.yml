@@ -7,4 +7,4 @@
 
   - name: Debug EDA Event Data
     ansible.builtin.debug:
-      msg: "{{ message }}"
+      msg: "{{ host_msg }}"
