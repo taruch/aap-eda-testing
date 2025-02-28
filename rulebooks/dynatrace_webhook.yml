@@ -6,27 +6,38 @@
         host: 0.0.0.0
         port: 5000
         token: '{{ dt_webhook_token | default(omit) }}'
-      
 
   rules:
-    - name: API Endpoint not available
-      condition: event.payload.eventData["event.name"] is match ("Monitoring not available")
-      action:
-        run_job_template:
-          name: "Trigger test playbook"
-          organization: "Default"
 
+    # - name: Get push events on main
+    #   condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+    #   action:
+    #     post_event:
+    #       event:
+    #         category: "{{ event.payload.eventData['event.category'] }}"
+
+
+    # - name: API Endpoint not available
+    #   condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+    #   action:
+    #     debug:
+    #       msg: "{{ category }}"
 
     - name: Event payload is defined
-      condition: event.payload is defined
+      condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
       action:
-        run_job_template:
-          name: EDA Test
-          organization: Default
-          job_args:
-            extra_vars:
-              host_msg: "{{ event.payload.eventData['host.name'] }}"
-              message: From EDA webhook source
-              sleep: 1
+        # run_job_template:
+        run_playbook:
+          # name: EDA Test
+          # organization: Default
+          # job_args:
+          #   extra_vars:
+          #     host_msg: "{{ event.payload }}"
+          #     message: From EDA webhook source
+          #     sleep: 1
+          name: /tmp/demo/test_eda.yml
+          extra_vars:
+            host_msg: "{{ event.payload.eventData['event.category'] }}"
+            message: From EDA webhook source
 
 ...

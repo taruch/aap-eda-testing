@@ -13,8 +13,17 @@
       ansible.builtin.debug:
         msg: "{{ host_msg | type_debug }}"
 
+    - name: Debug EDA Fix JSON
+      ansible.builtin.set_fact:
+        event: "{{ host_msg | string }}"
+
+
     - name: Debug EDA Event Data
       ansible.builtin.debug:
-        msg: "{{ host_msg.eventData }}"
+        msg: "{{ event | ansible.builtin.from_json }}"
+
+    - name: Debug EDA New JSON
+      ansible.builtin.debug:
+        msg: "{{ newEventData }}"
 
 ...
