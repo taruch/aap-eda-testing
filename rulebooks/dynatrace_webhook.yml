@@ -16,7 +16,7 @@
           event:
             display_id: "{{ event.payload.eventData['display_id'] }}"
             _host: "{{ event.payload.eventData['host.name'] }}"
-            root_cause: "{{ event.payload.eventData['root_cause_entity_name'] }}"
+            root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
 
     # - name: API Endpoint not available
