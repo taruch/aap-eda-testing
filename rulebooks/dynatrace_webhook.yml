@@ -9,14 +9,14 @@
 
   rules:
 
-    - name: Pull data fields from event
-      condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
-      action:
-        post_event:
-          event:
-            display_id: "{{ event.payload.eventData['display_id'] }}"
-            _host: "{{ event.payload.eventData['host.name'] }}"
-            root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+    # - name: Pull data fields from event
+    #   condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+    #   action:
+    #     post_event:
+    #       event:
+    #         display_id: "{{ event.payload.eventData['display_id'] }}"
+    #         _host: "{{ event.payload.eventData['host.name'] }}"
+    #         root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
 
     # - name: API Endpoint not available
@@ -26,17 +26,20 @@
     #       msg: "{{ category }}"
 
     - name: Event payload is defined
-      # condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
-      condition: event.display_id is defined
+      condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+      # condition: event.display_id is defined
       action:
         run_job_template:
           name: EDA Test
           organization: Default
           job_args:
             extra_vars:
-              _hosts: "{{ event._host }}"
-              display_id: "{{ event.display_id }}"
-              root_cause: "{{ event.root_cause }}"
+              display_id: "{{ event.payload.eventData['display_id'] }}"
+              _hosts: "{{ event.payload.eventData['host.name'] }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+              # _hosts: "{{ event._host }}"
+              # display_id: "{{ event.display_id }}"
+              # root_cause: "{{ event.root_cause }}"
               sleep: 1
         # run_playbook:
         #   name: /tmp/demo/test_eda.yml
