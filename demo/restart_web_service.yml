@@ -5,16 +5,19 @@
   become: true
 
   tasks:
-    # - name: Restart JBOSS
-    #   ansible.builtin.service:
-    #     name: jws.service
-    #     state: restarted
+    - name: Restart JBOSS
+      ansible.builtin.service:
+        name: jws.service
+        state: restarted
 
-    # - name: Restart Web Service
-    #   ansible.builtin.service:
-    #     name: httpd
-    #     state: restarted
+    - name: Restart Web Service
+      ansible.builtin.service:
+        name: httpd
+        state: restarted
 
+    - name: Pause to let Dynatrace update
+      ansible.builtin.pause:
+        seconds: 10
 
     - name: Check Dynatrace problem status
       ansible.builtin.uri:
