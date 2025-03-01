@@ -36,7 +36,7 @@
             extra_vars:
               host_msg: "{{ event._host }}"
               display_id: "{{ event.display_id }}"
-              root_cause: "{{ root_cause }}"
+              root_cause: "{{ event.root_cause }}"
               sleep: 1
         # run_playbook:
         #   name: /tmp/demo/test_eda.yml
