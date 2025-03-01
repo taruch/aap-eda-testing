@@ -34,7 +34,7 @@
           organization: Default
           job_args:
             extra_vars:
-              host_msg: "{{ event._host }}"
+              _hosts: "{{ event._host }}"
               display_id: "{{ event.display_id }}"
               root_cause: "{{ event.root_cause }}"
               sleep: 1

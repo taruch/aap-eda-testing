@@ -1,6 +1,6 @@
 ---
 - name: Restart and validate the web host
-  hosts: all
+  hosts: "{{ _hosts }}"
   become: true
 
   tasks:
