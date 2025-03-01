@@ -7,19 +7,19 @@
 
     - name: Debug EDA Event Data
       ansible.builtin.debug:
-        msg: "{{ ansible_eda }}"
-
-    - name: Debug EDA Event Data
-      ansible.builtin.debug:
-        msg: "{{ ansible_eda | type_debug }}"
-
-    - name: Debug EDA Event Data
-      ansible.builtin.debug:
         msg: "{{ ansible_eda.event }}"
 
     - name: Debug EDA Event Data
       ansible.builtin.debug:
         msg: "{{ ansible_eda.event | type_debug }}"
+
+    - name: Debug EDA Event Data Payload level
+      ansible.builtin.debug:
+        msg: "{{ ansible_eda.event.payload }}"
+
+    - name: Debug EDA Event Data Payload level
+      ansible.builtin.debug:
+        msg: "{{ ansible_eda.event.payload | type_debug }}"
 
     # - name: Debug EDA Fix JSON
     #   ansible.builtin.set_fact:
