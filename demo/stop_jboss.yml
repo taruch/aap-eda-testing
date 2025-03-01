@@ -5,14 +5,20 @@
   become: true
 
   tasks:
-    - name: Stop JBOSS service
-      ansible.builtin.service:
-        name: jws.service
-        state: stopped
-        enabled: true
+    # - name: Stop JBOSS service
+    #   ansible.builtin.service:
+    #     name: jws.service
+    #     state: stopped
+    #     enabled: true
 
-    - name: Stop httpd service
-      ansible.builtin.service:
-        name: httpd.service
-        state: stopped
-        enabled: true
+    # - name: Stop httpd service
+    #   ansible.builtin.service:
+    #     name: httpd.service
+    #     state: stopped
+    #     enabled: true
+
+    - name: Kill service
+      ansible.builtin.command:
+        commands: 
+          - kill -9 jws
+          - kill -9 httpd
