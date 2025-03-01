@@ -35,7 +35,7 @@
           job_args:
             extra_vars:
               display_id: "{{ event.payload.eventData['display_id'] }}"
-              event_id: "{{ event.payload.eventData['event.id'] }}"
+              problem_id: "{{ event.payload.eventData['event.id'] }}"
               _hosts: "{{ event.payload.eventData['host.name'] }}"
               root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
               # _hosts: "{{ event._host }}"
