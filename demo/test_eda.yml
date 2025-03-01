@@ -7,11 +7,11 @@
 
     - name: Debug EDA Event Data
       ansible.builtin.debug:
-        msg: "{{ host_msg }}"
+        msg: "{{ event }}"
 
     - name: Debug EDA Event Data
       ansible.builtin.debug:
-        msg: "{{ host_msg | type_debug }}"
+        msg: "{{ event | type_debug }}"
 
     # - name: Debug EDA Fix JSON
     #   ansible.builtin.set_fact:
