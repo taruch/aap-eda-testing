@@ -18,7 +18,7 @@
 
     - name: Check Dynatrace problem status
       ansible.builtin.uri:
-        url: "{{ dynatrace_url }}/api/v2/problems/{{ problem_id }}"
+        url: "https://{{ dynatrace_url }}/api/v2/problems/{{ problem_id }}"
         method: GET
         status_code: 200
         return_content: yes
