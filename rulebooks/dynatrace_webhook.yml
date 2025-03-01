@@ -9,13 +9,14 @@
 
   rules:
 
-    - name: Get push events on main
-      condition: event.payload is defined
+    - name: Pull data fields from event
+      condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
       action:
         post_event:
           event:
             display_id: "{{ event.payload.eventData['display_id'] }}"
             _host: "{{ event.payload.eventData['host.name'] }}"
+            root_cause: "{{ event.payload.eventData['root_cause_entity_name'] }}"
 
 
     # - name: API Endpoint not available
@@ -35,7 +36,7 @@
             extra_vars:
               host_msg: "{{ event._host }}"
               display_id: "{{ event.display_id }}"
-              message: From EDA webhook source
+              root_cause: "{{ root_cause }}"
               sleep: 1
         # run_playbook:
         #   name: /tmp/demo/test_eda.yml
