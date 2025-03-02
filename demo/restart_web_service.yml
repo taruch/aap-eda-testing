@@ -33,9 +33,10 @@
       ansible.builtin.debug:
         var: problem_details   
 
-    - name: Verify problem is still open
-      when: problem_details.json.status == "OPEN"
-      debug:
+    - name: Verify problem is CLOSED
+      ansible.builtin.assert:
+        that:
+          - problem_details.json.status == "CLOSED"
         msg: "Dynatrace problem with ID {{ problem_id }} is still open."
 
 ...
