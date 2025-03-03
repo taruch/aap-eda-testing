@@ -3,6 +3,7 @@
   hosts: "{{ _hosts }}"
   gather_facts: false
   become: true
+  incident_state: 'new'
 
   tasks:
     - name: Restart JBOSS
@@ -38,12 +39,19 @@
         that:
           - problem_details.json.status == "CLOSED"
         msg: "Dynatrace problem with ID {{ problem_id }} is still open."
+      ignore_errors: true
+
+    - name: Update incident_state
+      when: problem_details.json.status == "CLOSED"
+      ansible.builtin.set_fact:
+        incident_state: "closed"
 
     - name: Set Follow-On Variables
       ansible.builtin.set_stats:
         data:
           Dynatrace_Issue_state: "{{ problem_details.json.status }}"
           Dynatrace_Issue_ID: "{{ problem_id }}"
+          incident_state: "{{ incident_state }}"
 
 
 
