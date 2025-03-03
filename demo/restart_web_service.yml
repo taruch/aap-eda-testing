@@ -3,7 +3,8 @@
   hosts: "{{ _hosts }}"
   gather_facts: false
   become: true
-  incident_state: 'new'
+  vars:
+    incident_state: 'new'
 
   tasks:
     - name: Restart JBOSS
