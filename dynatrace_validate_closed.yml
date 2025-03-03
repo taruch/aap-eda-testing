@@ -1,0 +1,16 @@
+---
+
+- name: Check Dynatrace problem status
+  ansible.builtin.uri:
+    url: "https://{{ dynatrace_url }}/api/v2/problems/{{ problem_id }}"
+    method: GET
+    status_code: 200
+    return_content: yes
+    headers:
+      Authorization: "API-Token {{ dynatrace_api_key }}"
+  register: problem_details
+
+- name: Debug details
+  ansible.builtin.debug:
+    var: problem_details
+    verbosity: 3

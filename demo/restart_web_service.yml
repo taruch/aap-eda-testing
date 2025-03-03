@@ -14,28 +14,13 @@
       ansible.builtin.service:
         name: httpd
         state: restarted
-
-    - name: Pause to let Dynatrace update
-      ansible.builtin.pause:
-        seconds: 10
-
-    - name: Check Dynatrace problem status
-      ansible.builtin.uri:
-        url: "https://{{ dynatrace_url }}/api/v2/problems/{{ problem_id }}"
-        method: GET
-        status_code: 200
-        return_content: yes
-        headers:
-          Authorization: "API-Token {{ dynatrace_api_key }}"
-      register: problem_details
+ 
+    - name: Check for Problem Status in Dynatrace
+      ansible.builtin.include_tasks:
+        file: dynatrace_validate_closed.yml
       until: problem_details.json.status == "CLOSED"
-      retries: 10
+      retries: 20
       delay: 20
-
-    - name: Debug details
-      ansible.builtin.debug:
-        var: problem_details
-        verbosity: 3
 
     - name: Verify problem is CLOSED
       ansible.builtin.assert:
