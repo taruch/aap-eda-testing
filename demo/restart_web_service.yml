@@ -38,5 +38,12 @@
         that:
           - problem_details.json.status == "CLOSED"
         msg: "Dynatrace problem with ID {{ problem_id }} is still open."
+    
+    - name: Set Follow-On Variables
+      ansible.builtin.set_stats:
+        data:
+          Dynatrace_Issue_state: "{{ problem_details.json.status }}"
+          Dynatrace_Issue_ID: "{{ problem_id }}"
+
 
 ...
