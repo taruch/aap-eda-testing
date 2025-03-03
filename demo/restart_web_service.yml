@@ -28,6 +28,9 @@
         headers:
           Authorization: "API-Token {{ dynatrace_api_key }}"
       register: problem_details
+      until: problem_details.json.status == "CLOSED"
+      retries: 10
+      delay: 20
 
     - name: Debug details
       ansible.builtin.debug:
@@ -39,9 +42,6 @@
         that:
           - problem_details.json.status == "CLOSED"
         msg: "Dynatrace problem with ID {{ problem_id }} is still open."
-      until: problem_details.json.status == "CLOSED"
-      retries: 10
-      delay: 20
 
     - name: Set Follow-On Variables
       ansible.builtin.set_stats:
