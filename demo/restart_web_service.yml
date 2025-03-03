@@ -31,19 +31,24 @@
 
     - name: Debug details
       ansible.builtin.debug:
-        var: problem_details   
+        var: problem_details
+        verbosity: 3
 
     - name: Verify problem is CLOSED
       ansible.builtin.assert:
         that:
           - problem_details.json.status == "CLOSED"
         msg: "Dynatrace problem with ID {{ problem_id }} is still open."
-    
+      until: problem_details.json.status == "CLOSED"
+      retries: 10
+      delay: 20
+
     - name: Set Follow-On Variables
       ansible.builtin.set_stats:
         data:
           Dynatrace_Issue_state: "{{ problem_details.json.status }}"
           Dynatrace_Issue_ID: "{{ problem_id }}"
+
 
 
 ...
