@@ -22,21 +22,5 @@
               _hosts: "{{ event.payload.eventData['host.name'] }}"
               root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
-        # run_job_template:
-        #   name: 'DYNATRACE / Restore Service Availability'
-        #   organization: Default
-        #   job_args:
-        #     extra_vars:
-        #       display_id: "{{ event.payload.eventData['display_id'] }}"
-        #       problem_id: "{{ event.payload.eventData['event.id'] }}"
-        #       _hosts: "{{ event.payload.eventData['host.name'] }}"
-        #       root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
-        #       sleep: 1
-        # run_playbook:
-        #   name: /tmp/demo/test_eda.yml
-        #   extra_vars:
-        #     display_id: "{{ event.display_id }}"
-        #     host_msg: "{{ event._host }}"
-        #     message: From EDA webhook source
 
 ...
