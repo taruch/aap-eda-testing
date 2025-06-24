@@ -33,7 +33,7 @@
       action:
         post_event:
           event:
-            type: "{{ event.meta.headers.X_Gitea_Event }}"
+            type: "{{ event.meta.headers.X-GitHub-Event }}"
             gitref: "{{ event.payload.ref }}"
             repo_name: "{{ event.payload.repository.name }}"
             author: "{{ event.payload.head_commit.author }}"
