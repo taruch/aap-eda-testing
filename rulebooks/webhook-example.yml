@@ -28,7 +28,8 @@
         debug:
 
     - name: Get push events on main 
-      condition: event.meta.headers.X_Gitea_Event == "push"
+      # condition: event.meta.headers.X_Gitea_Event == "push"
+      condition: event.payload is defined
       action:
         post_event:
           event:
@@ -39,7 +40,7 @@
             clone_url: "{{ event.payload.repository.clone_url }}"
 
     - name: Repond to push events
-      condition: event.repo_name == "webhook_testing" and event.type == "push"
+      condition: event.repo_name == "webhook_testing" # and event.type == "push"
       action:
         run_job_template:
           name: EDA Test
