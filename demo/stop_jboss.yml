@@ -19,12 +19,16 @@
 
     - name: Kill service
       ansible.builtin.command: killall -9 java
+      ignore_errors: true
 
     - name: Get service status
       ansible.builtin.command: systemctl status jws
+      ignore_errors: true
 
     - name: Kill service
       ansible.builtin.command: killall -9 httpd
+      ignore_errors: true
 
     - name: Get service status
       ansible.builtin.command: systemctl status httpd
+      ignore_errors: true
