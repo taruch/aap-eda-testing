@@ -18,7 +18,13 @@
     #     enabled: true
 
     - name: Kill service
-      ansible.builtin.command: kill -9 jws
+      ansible.builtin.command: killall -9 java
+
+    - name: Get service status
+      ansible.builtin.command: systemctl status jws
 
     - name: Kill service
-      ansible.builtin.command: kill -9 httpd
+      ansible.builtin.command: killall -9 httpd
+
+    - name: Get service status
+      ansible.builtin.command: systemctl status httpd
