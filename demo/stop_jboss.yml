@@ -1,6 +1,6 @@
 ---
 - name: Stop JBOSS service
-  hosts: jboss
+  hosts: "{{ _hosts }}"
   gather_facts: false
   become: true
 
