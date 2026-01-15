@@ -19,37 +19,6 @@
         - ansible.eda.dashes_to_underscores:
 
   rules:
-
-    - name: Debug Webhook Event
-      condition: 
-        any:
-          - event.payload is defined
-      action:
-        debug:
-
-    - name: Get push events on main 
-      # condition: event.meta.headers.X_Gitea_Event == "push"
-      condition: event.payload is defined
-      action:
-        post_event:
-          event:
-            type: "{{ event.meta.headers.X-GitHub-Event }}"
-            gitref: "{{ event.payload.ref }}"
-            repo_name: "{{ event.payload.repository.name }}"
-            author: "{{ event.payload.head_commit.author }}"
-            clone_url: "{{ event.payload.repository.clone_url }}"
-
-    - name: Repond to push events
-      condition: event.repo_name == "webhook_testing" # and event.type == "push"
-      action:
-        run_job_template:
-          name: EDA Test
-          organization: Default
-          job_args:
-            extra_vars:
-               message: From EDA webhook source
-               sleep: 1
-
     - name: Event Payload is defined
       condition: event.payload is defined
       #condition: event.payload.message == "fastapi"
