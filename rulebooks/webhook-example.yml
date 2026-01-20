@@ -20,13 +20,6 @@
 
   rules:
 
-    - name: Debug Webhook Event
-      condition: 
-        any:
-          - event.payload is defined
-      action:
-        debug:
-
     - name: Event Payload is defined
       condition: event.payload is defined
       #condition: event.payload.message == "fastapi"
@@ -39,6 +32,11 @@
                message: From EDA webhook source
                sleep: 1
 
-
+    - name: Debug Webhook Event
+      condition: 
+        any:
+          - event.payload is defined
+      action:
+        debug:
 
 ...
