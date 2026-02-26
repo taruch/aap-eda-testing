@@ -1,0 +1,29 @@
+---
+- name: Create an incident ticket in ServiceNow
+  hosts: localhost
+  gather_facts: false
+
+  tasks:
+    - name: Update incident
+      servicenow.itsm.incident:
+        instance:
+          host: "{{ lookup('env', 'SN_HOST') | default(omit) }}"
+          # api_key: "{{ lookup('env', 'SN_API_KEY') | default(omit) }}"
+          username: "{{ lookup('env', 'SN_USERNAME') | default(omit) }}"
+          password: "{{ lookup('env', 'SN_PASSWORD') | default(omit) }}"
+        state: 2
+        number: "{{ req_number }}"
+        short_description: "Service Availability issue"
+        description: >
+          "{{ ansible_facts | to_nice_json | default('No event data provided') }}"
+        impact: med
+        urgency: med
+        other:
+          expected_start: "{{ lookup('pipe','date +%Y%m%d%H%M%S')}}"
+      register: incident_out
+
+
+    - name: Set Incident Number
+      ansible.builtin.set_stats:
+        data:
+          ServiceNow_Incident_Number: "{{ incident_out.record.number }}"
