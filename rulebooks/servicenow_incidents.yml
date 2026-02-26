@@ -4,9 +4,9 @@
   sources:
     - servicenow.itsm.records:
         table: incident
-        # A basic query to look for new/active incidents. 
+        # A basic query to look for new/active incidents.
         # The plugin will poll based on this query.
-        query: "active=true^state=1" 
+        query: "active=true^state=1"
         interval: 60 # Polling interval in seconds
         remote_servicenow_timezone: UTC
 
@@ -18,3 +18,5 @@
       action:
         print_event:
           pretty: true
+
+...

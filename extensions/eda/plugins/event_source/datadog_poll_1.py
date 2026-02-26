@@ -1,3 +1,8 @@
+"""
+datadog_poll.py
+An Ansible EDA source plugin that polls Datadog for active monitor alerts.
+"""
+
 import asyncio
 import logging
 from typing import Any, Dict
@@ -10,43 +15,38 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
     # Argument parsing
     api_key = args.get("api_key")
     app_key = args.get("app_key")
-    delay = int(args.get("delay", 60))
-    tags = args.get("tags", "")
+    delay = int(args.get("delay", 60))  # Poll every 60s by default
+    tags = args.get("tags", "")         # Filter by tags (e.g., "env:prod")
 
     if not api_key or not app_key:
         logger.error("Datadog API and App keys are required.")
         return
 
+    # Datadog Client Configuration
     configuration = Configuration()
     configuration.api_key["apiKeyAuth"] = api_key
     configuration.api_key["appKeyAuth"] = app_key
 
-    # STATE MANAGEMENT
-    # We only store IDs of alerts currently in 'Alert' state.
-    # If an alert is fixed, it naturally drops out of this set in the next cycle.
-    active_alert_ids = set()
+    # Track seen alerts to avoid duplicates
+    seen_alerts = set()
 
     while True:
         try:
             async with ApiClient(configuration) as api_client:
                 api_instance = MonitorsApi(api_client)
                 
-                # Fetch currently active alerts
+                # Fetch active alerts (group_states='Alert')
                 response = api_instance.search_monitor_groups(
                     query=f"status:alert {tags}"
                 )
-                
-                # Create a set of IDs found in THIS specific poll cycle
-                current_cycle_ids = set()
-                
+
                 if response.groups:
                     for group in response.groups:
-                        # Create unique ID
+                        # Create a unique ID for the alert instance
                         alert_id = f"{group.monitor_id}-{group.result_groups}"
-                        current_cycle_ids.add(alert_id)
-
-                        # LOGIC: If this ID was NOT in our tracking set, it's new.
-                        if alert_id not in active_alert_ids:
+                        
+                        if alert_id not in seen_alerts:
+                            # New Alert Found!
                             event = {
                                 "monitor_name": group.monitor_name,
                                 "monitor_id": group.monitor_id,
@@ -55,16 +55,13 @@ async def main(queue: asyncio.Queue, args: Dict[str, Any]):
                                 "last_triggered": str(group.last_triggered_ts),
                                 "meta": {"hosts": "localhost"}
                             }
+                            
                             await queue.put(event)
-                            logger.info(f"New Alert Detected: {group.monitor_name}")
-                
-                # CRITICAL STEP: Update the state
-                # We overwrite the tracking set with the IDs found in this cycle.
-                # If an alert from the previous cycle is missing now, it is implicitly "forgotten"
-                # (garbage collected), solving the memory leak.
-                active_alert_ids = current_cycle_ids
+                            seen_alerts.add(alert_id)
+                            logger.info(f"Triggered event for {group.monitor_name}")
 
         except Exception as e:
             logger.error(f"Error polling Datadog: {e}")
 
+        # Wait for next poll cycle
         await asyncio.sleep(delay)
