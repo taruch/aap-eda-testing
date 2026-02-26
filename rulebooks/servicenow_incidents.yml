@@ -1,0 +1,20 @@
+---
+- name: Poll ServiceNow for New Incidents
+  hosts: all
+  sources:
+    - servicenow.itsm.records:
+        table: incident
+        # A basic query to look for new/active incidents. 
+        # The plugin will poll based on this query.
+        query: "active=true^state=1" 
+        interval: 60 # Polling interval in seconds
+        remote_servicenow_timezone: UTC
+
+  rules:
+    - name: Match all new incidents
+      # The plugin returns the ServiceNow record under the 'record' key.
+      # This condition simply ensures a record was returned.
+      condition: event.record is defined
+      action:
+        print_event:
+          pretty: true
