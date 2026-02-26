@@ -9,6 +9,7 @@
         interval: 20 # Polling interval in seconds
         remote_servicenow_timezone: UTC
         sysparm_query: "active=true^state=1"
+        remote_servicenow_timezone: "US/Eastern"
 
   rules:
     - name: Match all new incidents
