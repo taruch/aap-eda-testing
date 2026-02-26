@@ -12,14 +12,6 @@
         remote_servicenow_timezone: "US/Eastern"
 
   rules:
-    - name: Match all new incidents
-      # The plugin returns the ServiceNow record under the 'record' key.
-      # This condition simply ensures a record was returned.
-      condition: event.record is defined
-      action:
-        print_event:
-          pretty: true
-
     - name: Initial debug action
       condition: event.record is defined
       action:
@@ -31,5 +23,16 @@
               message: From EDA ServiceNow source
               req_sys_id: "{{ event.sys_id }}"
               req_number: "{{ event.number }}"
+
+
+    - name: Match all new incidents
+      # The plugin returns the ServiceNow record under the 'record' key.
+      # This condition simply ensures a record was returned.
+      condition: event.record is defined
+      action:
+        print_event:
+          pretty: true
+
+
 
 ...
