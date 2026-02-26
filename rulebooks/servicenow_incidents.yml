@@ -15,7 +15,7 @@
       condition: event.sys_id is defined
       action:
         run_job_template:
-          name: "ServiceNow Update"
+          name: "EDA ServiceNow Update"
           organization: Default
           job_args:
             extra_vars:
