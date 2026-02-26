@@ -13,7 +13,7 @@
 
   rules:
     - name: Initial debug action
-      condition: event is defined
+      condition: event.sys_id is defined
       action:
         run_job_template:
           name: "EDA Test"
