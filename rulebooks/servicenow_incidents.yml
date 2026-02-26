@@ -8,9 +8,7 @@
         # The plugin will poll based on this query.
         interval: 60 # Polling interval in seconds
         remote_servicenow_timezone: UTC
-        query: 
-          active: "true"
-          state: 1
+        sysparm_query: "active=true^state=1"
 
   rules:
     - name: Match all new incidents
