@@ -5,7 +5,7 @@
   sources:
     - name: Watch for updated table
       servicenow.itsm.records:
-        table: "sc_requests"
+        table: "sc_request"
         interval: "60"
         remote_servicenow_timezone: UTC
 
