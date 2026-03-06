@@ -1,0 +1,47 @@
+version: 3
+
+images:
+  base_image:
+    # name: registry.redhat.io/ansible-automation-platform-24/de-minimal-rhel8:latest
+    # name: registry.redhat.io/ansible-automation-platform-25/de-minimal-rhel9:latest
+    name: 'registry.redhat.io/ansible-automation-platform-26/de-minimal-rhel9:latest'
+
+dependencies:
+  system:
+    - pkgconf-pkg-config [platform:rpm]
+    - systemd-devel [platform:rpm]
+    - gcc [platform:rpm]
+    - python3.11-devel [platform:rpm]
+    - krb5-devel
+  galaxy:
+    collections:
+      - ansible.eda
+      - servicenow.itsm
+  python_interpreter:
+    package_system: "python3.11"
+    python_path: "/usr/bin/python3.11"
+
+additional_build_files:
+  - src: files/ansible.cfg
+    dest: configs
+
+options:
+  package_manager_path: /usr/bin/microdnf
+
+additional_build_steps:
+  prepend_base:
+    - RUN echo This is a prepend base command!
+    - RUN echo python3 --version
+  prepend_galaxy:
+    - ADD _build/configs/ansible.cfg /etc/ansible/ansible.cfg
+    - RUN cat /etc/ansible/ansible.cfg
+    - RUN echo $ANSIBLE_GALAXY_SERVER_VALIDATED_TOKEN
+    - RUN echo $ ANSIBLE_GALAXY_SERVER_CERTIFIED_TOKEN
+    # Environment variables used for Galaxy client configurations
+  prepend_final: |
+    RUN whoami
+    RUN cat /etc/os-release
+  append_final:
+    - RUN echo This is a post-install command!
+    - RUN ls -la /etc
+
