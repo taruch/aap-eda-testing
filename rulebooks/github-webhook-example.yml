@@ -16,7 +16,7 @@
       filters:
         - ansible.eda.json_filter:
             exclude_keys: ['sender','owner']
-        - ansible.eda.dashes_to_underscores:
+        # - ansible.eda.dashes_to_underscores:
 
   rules:
 
