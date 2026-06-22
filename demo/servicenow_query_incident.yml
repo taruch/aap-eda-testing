@@ -1,0 +1,45 @@
+---
+# Query ServiceNow incident to check status after remediation
+- name: Query ServiceNow Incident Status
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    incident_number: "{{ lookup('env', 'INCIDENT_NUMBER') | default('INC0010001') }}"
+
+  tasks:
+    - name: Get incident details from ServiceNow
+      servicenow.itsm.incident_info:
+        instance:
+          host: "{{ lookup('env', 'SN_HOST') }}"
+          username: "{{ lookup('env', 'SN_USERNAME') }}"
+          password: "{{ lookup('env', 'SN_PASSWORD') }}"
+        number: "{{ incident_number }}"
+      register: incident_details
+
+    - name: Display incident information
+      ansible.builtin.debug:
+        msg:
+          - "Incident: {{ incident_details.records[0].number }}"
+          - "State: {{ incident_details.records[0].state }}"
+          - "Priority: {{ incident_details.records[0].priority }}"
+          - "Short Description: {{ incident_details.records[0].short_description }}"
+          - "Assignment Group: {{ incident_details.records[0].assignment_group }}"
+          - "Assigned To: {{ incident_details.records[0].assigned_to }}"
+          - "Updated: {{ incident_details.records[0].sys_updated_on }}"
+
+    - name: Check if incident is resolved
+      ansible.builtin.assert:
+        that:
+          - incident_details.records[0].state in ["6", "7"]  # 6=Resolved, 7=Closed
+        success_msg: "Incident {{ incident_number }} has been resolved/closed"
+        fail_msg: "Incident {{ incident_number }} is still active (state={{ incident_details.records[0].state }})"
+      ignore_errors: true
+      register: incident_status
+
+    - name: Set stats for workflow
+      ansible.builtin.set_stats:
+        data:
+          incident_number: "{{ incident_details.records[0].number }}"
+          incident_state: "{{ incident_details.records[0].state }}"
+          incident_resolved: "{{ incident_status.failed is defined and not incident_status.failed }}"

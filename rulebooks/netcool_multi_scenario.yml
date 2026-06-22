@@ -1,0 +1,227 @@
+---
+- name: Multi-Scenario Netcool Event Handler
+  hosts: all
+  sources:
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5000
+
+  rules:
+    # Web Services
+    - name: Auto-Heal Downed Webserver
+      condition: >
+        event.AlertGroup == "Web Services" and
+        event.Severity == 5 and
+        event.Type == 1
+      action:
+        run_workflow_template:
+          name: Ansible Examples Restart Webserver
+          organization: Default
+          job_args:
+            extra_vars:
+              _host: "{{ event.Node }}"
+              alert_identifier: "{{ event.Identifier }}"
+
+    # Database Issues
+    - name: Restart Database Connection Pool
+      condition: >
+        event.AlertGroup == "Database" and
+        event.AlertKey == "DB_Connection_Pool_Exhausted" and
+        event.Severity >= 4
+      action:
+        run_job_template:
+          name: Database Restart Connection Pool
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              database_name: "{{ event.Identifier.split(':')[1] }}"
+
+    # Storage Issues
+    - name: Clean Up Disk Space
+      condition: >
+        event.AlertGroup == "Storage" and
+        event.AlertKey == "Disk_Space_Critical" and
+        event.Severity == 5
+      action:
+        run_job_template:
+          name: Storage Cleanup Logs
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              mount_point: "{{ event.ExtendedAttr.mount_point }}"
+              threshold_percent: 80
+
+    # Memory Issues
+    - name: Restart Memory-Intensive Services
+      condition: >
+        event.AlertGroup == "System Resources" and
+        event.AlertKey == "Memory_High" and
+        event.ExtendedAttr.usage_percent | int > 90
+      action:
+        run_job_template:
+          name: Service Memory Optimization
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              current_usage: "{{ event.ExtendedAttr.usage_percent }}"
+
+    # Security - Certificate Expiry
+    - name: Auto-Renew SSL Certificate
+      condition: >
+        event.AlertGroup == "Security" and
+        event.AlertKey == "SSL_Cert_Expiring" and
+        event.ExtendedAttr.days_remaining | int <= 14
+      action:
+        run_job_template:
+          name: Certificate Renewal
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              certificate_cn: "{{ event.ExtendedAttr.certificate_cn }}"
+
+    # Network Issues
+    - name: Restart Network Interface
+      condition: >
+        event.AlertGroup == "Network" and
+        event.AlertKey == "Interface_Down" and
+        event.Severity == 5
+      action:
+        run_job_template:
+          name: Network Interface Restart
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              interface_name: "{{ event.ExtendedAttr.interface }}"
+
+    # Application Performance
+    - name: Scale Application on Performance Degradation
+      condition: >
+        event.AlertGroup == "Application Performance" and
+        event.AlertKey == "API_Response_Slow" and
+        event.ExtendedAttr.response_time_ms | int > 7000
+      action:
+        run_job_template:
+          name: Application Auto-Scale
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              endpoint: "{{ event.ExtendedAttr.endpoint }}"
+              response_time_ms: "{{ event.ExtendedAttr.response_time_ms }}"
+
+    # Backup Failures
+    - name: Retry Failed Backup
+      condition: >
+        event.AlertGroup == "Backup & Recovery" and
+        event.AlertKey == "Backup_Failed"
+      action:
+        run_job_template:
+          name: Backup Retry Job
+          organization: Default
+          job_args:
+            extra_vars:
+              backup_server: "{{ event.Node }}"
+              target_database: "{{ event.ExtendedAttr.target_database }}"
+              backup_type: "{{ event.ExtendedAttr.backup_type }}"
+
+    # Kubernetes Issues
+    - name: Restart Crashlooping Pod
+      condition: >
+        event.AlertGroup == "Kubernetes" and
+        event.AlertKey == "Pod_CrashLoop" and
+        event.ExtendedAttr.restart_count | int > 10
+      action:
+        run_job_template:
+          name: Kubernetes Pod Restart
+          organization: Default
+          job_args:
+            extra_vars:
+              k8s_cluster_node: "{{ event.Node }}"
+              namespace: "{{ event.ExtendedAttr.namespace }}"
+              pod_name: "{{ event.ExtendedAttr.pod_name }}"
+
+    # Message Queue Issues
+    - name: Scale Message Queue Consumers
+      condition: >
+        event.AlertGroup == "Messaging" and
+        event.AlertKey == "Queue_Depth_High" and
+        event.ExtendedAttr.message_count | int > 12000
+      action:
+        run_job_template:
+          name: RabbitMQ Scale Consumers
+          organization: Default
+          job_args:
+            extra_vars:
+              rabbitmq_host: "{{ event.Node }}"
+              queue_name: "{{ event.ExtendedAttr.queue_name }}"
+              target_consumers: 6
+
+    # DNS Service Issues
+    - name: Restart DNS Service
+      condition: >
+        event.AlertGroup == "Network Services" and
+        event.AlertKey == "DNS_Down" and
+        event.Severity == 5
+      action:
+        run_job_template:
+          name: DNS Service Restart
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              dns_service: "{{ event.ExtendedAttr.service }}"
+
+    # Load Balancer Issues
+    - name: Remove Unhealthy Backend from Pool
+      condition: >
+        event.AlertGroup == "Load Balancing" and
+        event.AlertKey == "LB_Backend_Unhealthy" and
+        event.ExtendedAttr.healthy_backends | int < 3
+      action:
+        run_job_template:
+          name: Load Balancer Health Management
+          organization: Default
+          job_args:
+            extra_vars:
+              lb_host: "{{ event.Node }}"
+              pool_name: "{{ event.ExtendedAttr.pool_name }}"
+              unhealthy_nodes: "{{ event.ExtendedAttr.unhealthy_nodes }}"
+
+    # Hardware Issues
+    - name: Alert on Critical Hardware Temperature
+      condition: >
+        event.AlertGroup == "Hardware" and
+        event.AlertKey == "CPU_Temp_Critical" and
+        event.ExtendedAttr.current_temp_celsius | int > 90
+      action:
+        run_job_template:
+          name: Hardware Emergency Notification
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.Node }}"
+              temp_celsius: "{{ event.ExtendedAttr.current_temp_celsius }}"
+              cpu_id: "{{ event.ExtendedAttr.cpu_id }}"
+
+    # Security - Firewall Violations
+    - name: Block Suspicious IP
+      condition: >
+        event.AlertGroup == "Security" and
+        event.Type == 13 and
+        event.AlertKey == "Firewall_Violation" and
+        event.ExtendedAttr.blocked_count | int > 30
+      action:
+        run_job_template:
+          name: Firewall Block IP Address
+          organization: Default
+          job_args:
+            extra_vars:
+              firewall_host: "{{ event.Node }}"
+              source_ip: "{{ event.ExtendedAttr.source_ip }}"
+              destination_port: "{{ event.ExtendedAttr.destination_port }}"
+              reason: "Excessive blocked connection attempts"

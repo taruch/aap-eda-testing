@@ -1,0 +1,32 @@
+---
+- name: Consume Netcool Events from Kafka
+  hosts: all
+  sources:
+    - ansible.eda.kafka:
+        host: "kafka-broker-01.company.internal"
+        port: "9092"
+        topics:
+          - "netcool-alerts"
+        group_id: "eda-automation-consumers"
+        offset: "latest" # Read new alerts coming in
+        security_protocol: "SASL_PLAINTEXT" # Supports SSL/SASL as needed
+        sasl_mechanism: "PLAIN"
+        sasl_plain_username: "eda_user"
+        sasl_plain_password: "secure_password"
+
+  rules:
+    - name: Auto-Heal Downed Webserver
+      # Condition evaluates the JSON fields sent by Netcool
+      condition: >
+        event.AlertGroup == "Web Services" and
+        event.Severity == 5 and
+        event.Type == 1
+      action:
+        run_workflow_template:
+          name: Ansible Examples Restart Webserver
+          organization: Default
+          job_args:
+            extra_vars:
+              _host: "{{ event.Node }}"
+              message: From EDA webhook source
+              sleep: 1

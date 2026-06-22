@@ -1,0 +1,135 @@
+---
+# Create test ServiceNow incidents from example JSON file
+# Usage:
+#   ansible-playbook test_servicenow_create_incidents.yml
+#   ansible-playbook test_servicenow_create_incidents.yml -e scenario_filter="Critical Application"
+#   ansible-playbook test_servicenow_create_incidents.yml -e list_scenarios=true
+
+- name: Create Test ServiceNow Incidents
+  hosts: localhost
+  gather_facts: false
+
+  vars:
+    examples_file: "servicenow_incident_examples.json"
+    scenario_filter: ""  # Filter by scenario name (case-insensitive substring match)
+    list_scenarios: false  # Set to true to just list available scenarios
+
+  tasks:
+    - name: Load incident examples from JSON file
+      ansible.builtin.set_fact:
+        incident_examples: "{{ lookup('file', examples_file) | from_json }}"
+
+    - name: List available scenarios
+      when: list_scenarios | bool
+      block:
+        - name: Display available scenarios
+          ansible.builtin.debug:
+            msg: |
+              Available Scenarios:
+              {{ '=' * 80 }}
+              {% for example in incident_examples %}
+              {{ loop.index }}. {{ example.scenario }}
+                 Priority: {{ example.incident.priority }} | Category: {{ example.incident.category }}
+                 Description: {{ example.incident.short_description }}
+
+              {% endfor %}
+
+        - name: End playbook after listing
+          ansible.builtin.meta: end_play
+
+    - name: Filter scenarios by search term
+      when: scenario_filter | length > 0
+      ansible.builtin.set_fact:
+        incident_examples: "{{ incident_examples | selectattr('scenario', 'search', scenario_filter, ignorecase=True) | list }}"
+
+    - name: Verify we have scenarios to create
+      ansible.builtin.assert:
+        that:
+          - incident_examples | length > 0
+        fail_msg: "No scenarios found matching filter '{{ scenario_filter }}'"
+        success_msg: "Found {{ incident_examples | length }} scenario(s) to create"
+
+    - name: Display summary
+      ansible.builtin.debug:
+        msg: "Creating {{ incident_examples | length }} test incident(s) in {{ lookup('env', 'SN_HOST') }}"
+
+    - name: Create each incident in ServiceNow
+      loop: "{{ incident_examples }}"
+      loop_control:
+        loop_var: example
+        label: "{{ example.scenario }}"
+      servicenow.itsm.incident:
+        instance:
+          host: "{{ lookup('env', 'SN_HOST') }}"
+          username: "{{ lookup('env', 'SN_USERNAME') | default(omit) }}"
+          password: "{{ lookup('env', 'SN_PASSWORD') | default(omit) }}"
+          # api_key: "{{ lookup('env', 'SN_API_KEY') | default(omit) }}"
+        state: "{{ example.incident.state }}"
+        short_description: "{{ example.incident.short_description }}"
+        description: "{{ example.incident.description }}"
+        priority: "{{ example.incident.priority }}"
+        urgency: "{{ example.incident.urgency }}"
+        impact: "{{ example.incident.impact }}"
+        category: "{{ example.incident.category | default(omit) }}"
+        subcategory: "{{ example.incident.subcategory | default(omit) }}"
+        assignment_group: "{{ example.incident.assignment_group | default(omit) }}"
+        assigned_to: "{{ example.incident.assigned_to | default(omit) }}"
+        caller: "{{ example.incident.caller_id | default(omit) }}"
+        configuration_item: "{{ example.incident.configuration_item | default(omit) }}"
+        # Custom fields using 'other' parameter
+        other:
+          business_service: "{{ example.incident.business_service | default(omit) }}"
+          cmdb_ci: "{{ example.incident.cmdb_ci | default(omit) }}"
+          u_affected_users: "{{ example.incident.u_affected_users | default(omit) }}"
+          u_revenue_impact: "{{ example.incident.u_revenue_impact | default(omit) }}"
+          u_automated_remediation: "{{ example.incident.u_automated_remediation | default(omit) }}"
+          u_technical_details: "{{ example.incident.u_technical_details | default(omit) }}"
+          u_threat_level: "{{ example.incident.u_threat_level | default(omit) }}"
+          u_rpo_violation: "{{ example.incident.u_rpo_violation | default(omit) }}"
+          u_cvss_score: "{{ example.incident.u_cvss_score | default(omit) }}"
+          u_exploit_available: "{{ example.incident.u_exploit_available | default(omit) }}"
+          u_patch_available: "{{ example.incident.u_patch_available | default(omit) }}"
+          u_services_affected: "{{ example.incident.u_services_affected | default(omit) }}"
+          u_cluster_health: "{{ example.incident.u_cluster_health | default(omit) }}"
+          u_consumer_health: "{{ example.incident.u_consumer_health | default(omit) }}"
+          u_blind_operations: "{{ example.incident.u_blind_operations | default(omit) }}"
+          u_failure_rate: "{{ example.incident.u_failure_rate | default(omit) }}"
+          u_pool_capacity: "{{ example.incident.u_pool_capacity | default(omit) }}"
+          u_maintenance_window: "{{ example.incident.u_maintenance_window | default(omit) }}"
+          u_change_request: "{{ example.incident.u_change_request | default(omit) }}"
+      register: created_incidents
+
+    - name: Display created incidents summary
+      ansible.builtin.debug:
+        msg: |
+          {% set ns = namespace(created=0, failed=0) %}
+          {% for result in created_incidents.results %}
+          {% if result.record is defined %}
+          {% set ns.created = ns.created + 1 %}
+          {% else %}
+          {% set ns.failed = ns.failed + 1 %}
+          {% endif %}
+          {% endfor %}
+
+          {{ '=' * 80 }}
+          Summary: {{ ns.created }} created, {{ ns.failed }} failed
+          {{ '=' * 80 }}
+
+          Created Incidents:
+          {% for result in created_incidents.results %}
+          {% if result.record is defined %}
+          ✓ {{ result.record.number }}: {{ result.record.short_description }}
+            Priority: {{ result.record.priority }} | State: {{ result.record.state }}
+            URL: https://{{ lookup('env', 'SN_HOST') }}/nav_to.do?uri=incident.do?sys_id={{ result.record.sys_id }}
+          {% endif %}
+          {% endfor %}
+
+          {% if ns.failed > 0 %}
+          Failed Scenarios:
+          {% for result in created_incidents.results %}
+          {% if result.record is not defined %}
+          ✗ {{ result.example.scenario }}
+            Error: {{ result.msg | default('Unknown error') }}
+          {% endif %}
+          {% endfor %}
+          {% endif %}

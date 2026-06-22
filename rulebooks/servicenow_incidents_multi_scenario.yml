@@ -1,0 +1,290 @@
+---
+- name: Multi-Scenario ServiceNow Incident Handler
+  hosts: all
+  sources:
+    - servicenow.itsm.records:
+        table: incident
+        interval: 30  # Poll every 30 seconds
+        sysparm_query: "active=true^state!=6^state!=7"  # Active incidents, not resolved/closed
+        remote_servicenow_timezone: "US/Eastern"
+
+  rules:
+    # Critical Application Outages (Priority 1)
+    - name: Critical Application Outage - Auto Restart Services
+      condition: >
+        event.priority == "1" and
+        event.category == "Software" and
+        event.subcategory == "Application" and
+        event.u_automated_remediation == "true" and
+        event.state == "1"
+      action:
+        run_workflow_template:
+          name: Application Emergency Restart
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              configuration_item: "{{ event.configuration_item }}"
+              business_service: "{{ event.business_service }}"
+              affected_users: "{{ event.u_affected_users }}"
+
+    # Database Performance Issues (Priority 2)
+    - name: Database Performance Degradation - Run Optimization
+      condition: >
+        event.category == "Database" and
+        event.subcategory == "Performance" and
+        event.priority | int <= 2 and
+        event.u_automated_remediation == "true"
+      action:
+        run_job_template:
+          name: Database Performance Tuning
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              target_database: "{{ event.configuration_item }}"
+              cmdb_ci: "{{ event.cmdb_ci }}"
+              technical_details: "{{ event.u_technical_details }}"
+
+    # Network Outages (Priority 1) - Manual intervention required
+    - name: Network Outage - Create High Priority Alert
+      condition: >
+        event.priority == "1" and
+        event.category == "Network" and
+        event.subcategory == "Connectivity" and
+        event.u_automated_remediation == "false"
+      action:
+        run_job_template:
+          name: Network Emergency Notification
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              severity: "CRITICAL"
+              affected_datacenter: "{{ event.configuration_item }}"
+              technical_details: "{{ event.u_technical_details }}"
+
+    # Storage Capacity Issues
+    - name: Storage Capacity Critical - Auto Cleanup
+      condition: >
+        event.category == "Storage" and
+        event.subcategory == "Capacity" and
+        event.u_automated_remediation == "true"
+      action:
+        run_job_template:
+          name: Storage Cleanup and Archival
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              storage_device: "{{ event.configuration_item }}"
+              cmdb_ci: "{{ event.cmdb_ci }}"
+              cleanup_target_percent: "75"
+
+    # Security - Brute Force Detection
+    - name: Security - Block Brute Force Attack Source
+      condition: >
+        event.category == "Security" and
+        event.subcategory == "Authentication" and
+        event.short_description is search("brute force|failed login") and
+        event.u_automated_remediation == "true"
+      action:
+        run_job_template:
+          name: Firewall Block Malicious IP
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              technical_details: "{{ event.u_technical_details }}"
+              threat_level: "{{ event.u_threat_level | default('medium') }}"
+              firewall_ci: "{{ event.cmdb_ci }}"
+
+    # Backup Job Failures
+    - name: Backup Failure - Retry with Cleanup
+      condition: >
+        event.category == "Backup" and
+        event.subcategory == "Job Failure" and
+        event.u_automated_remediation == "true" and
+        event.u_rpo_violation | default('false') == "true"
+      action:
+        run_job_template:
+          name: Backup Cleanup and Retry
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              backup_server: "{{ event.cmdb_ci }}"
+              technical_details: "{{ event.u_technical_details }}"
+
+    # API Rate Limiting Issues
+    - name: API Rate Limit - Scale Resources
+      condition: >
+        event.category == "Application" and
+        event.subcategory == "API" and
+        event.short_description is search("rate limit|429") and
+        event.u_automated_remediation == "true"
+      action:
+        run_job_template:
+          name: API Gateway Scale Out
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              api_service: "{{ event.configuration_item }}"
+              technical_details: "{{ event.u_technical_details }}"
+              revenue_impact: "{{ event.u_revenue_impact }}"
+
+    # SSL Certificate Expiration
+    - name: Certificate Expiring - Auto Renew
+      condition: >
+        event.category == "Security" and
+        event.subcategory == "Certificates" and
+        event.short_description is search("certificate|SSL|TLS|cert") and
+        event.u_automated_remediation == "true"
+      action:
+        run_job_template:
+          name: Certificate Auto Renewal
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              cert_manager: "{{ event.cmdb_ci }}"
+              services_affected: "{{ event.u_services_affected | default('unknown') }}"
+              technical_details: "{{ event.u_technical_details }}"
+
+    # Kubernetes Pod Issues
+    - name: Kubernetes Pod CrashLoop - Restart Deployment
+      condition: >
+        event.category == "Platform" and
+        event.subcategory == "Kubernetes" and
+        event.short_description is search("CrashLoop|ImagePull|pod") and
+        event.u_automated_remediation == "true"
+      action:
+        run_job_template:
+          name: Kubernetes Pod Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              k8s_cluster: "{{ event.configuration_item }}"
+              technical_details: "{{ event.u_technical_details }}"
+              cluster_health: "{{ event.u_cluster_health | default('unknown') }}"
+
+    # Message Queue Backlog
+    - name: Message Queue Backlog - Scale Consumers
+      condition: >
+        event.category == "Messaging" and
+        event.short_description is search("queue|backlog|RabbitMQ|Kafka") and
+        event.u_automated_remediation == "true"
+      action:
+        run_job_template:
+          name: Message Queue Consumer Scaling
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              queue_cluster: "{{ event.configuration_item }}"
+              technical_details: "{{ event.u_technical_details }}"
+              consumer_health: "{{ event.u_consumer_health | default('unknown') }}"
+
+    # Monitoring System Down - High Priority Alert
+    - name: Monitoring Down - Blind Operations Alert
+      condition: >
+        event.category == "Monitoring" and
+        event.u_blind_operations | default('false') == "true" and
+        event.state == "1"
+      action:
+        run_job_template:
+          name: Monitoring System Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              monitoring_system: "{{ event.configuration_item }}"
+              technical_details: "{{ event.u_technical_details }}"
+              priority: "HIGH"
+
+    # DNS Service Issues
+    - name: DNS Resolution Failures - Restart Service
+      condition: >
+        event.category == "Network" and
+        event.subcategory == "DNS" and
+        event.u_automated_remediation == "true" and
+        event.u_failure_rate is defined
+      action:
+        run_job_template:
+          name: DNS Service Restart
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              dns_server: "{{ event.cmdb_ci }}"
+              failure_rate: "{{ event.u_failure_rate }}"
+              technical_details: "{{ event.u_technical_details }}"
+
+    # Load Balancer Health Issues
+    - name: Load Balancer Backend Failures - Investigate and Remove
+      condition: >
+        event.category == "Network" and
+        event.subcategory == "Load Balancer" and
+        event.u_automated_remediation == "true" and
+        event.u_pool_capacity is defined
+      action:
+        run_job_template:
+          name: Load Balancer Pool Management
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              load_balancer: "{{ event.configuration_item }}"
+              pool_capacity: "{{ event.u_pool_capacity }}"
+              technical_details: "{{ event.u_technical_details }}"
+
+    # Critical Security Vulnerabilities - Automated Patching
+    - name: Critical Vulnerability - Emergency Patching
+      condition: >
+        event.category == "Security" and
+        event.subcategory == "Patching" and
+        event.u_cvss_score is defined and
+        event.u_cvss_score | float >= 9.0 and
+        event.u_patch_available == "true" and
+        event.u_automated_remediation == "true"
+      action:
+        run_workflow_template:
+          name: Emergency Security Patching
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              cvss_score: "{{ event.u_cvss_score }}"
+              exploit_available: "{{ event.u_exploit_available }}"
+              technical_details: "{{ event.u_technical_details }}"
+              affected_systems: "{{ event.configuration_item }}"
+
+    # Update ServiceNow Incident - Mark Work In Progress
+    - name: Update ServiceNow - Work in Progress
+      condition: >
+        event.state == "1" and
+        event.u_automated_remediation == "true" and
+        event.sys_mod_count == "0"
+      action:
+        run_job_template:
+          name: ServiceNow Update Incident
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_sys_id: "{{ event.sys_id }}"
+              incident_number: "{{ event.number }}"
+              new_state: "2"
+              work_notes: "EDA automation triggered remediation workflow at {{ ansible_date_time.iso8601 }}"
+              assigned_to: "eda.automation"
+
+    # Catch-all - Log all new incidents for visibility
+    - name: Log All New Incidents
+      condition: >
+        event.sys_mod_count == "0" and
+        event.active == "true"
+      action:
+        print_event:
+          pretty: true
