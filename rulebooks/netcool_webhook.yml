@@ -1,0 +1,24 @@
+---
+- name: Listen for Netcool Webhooks
+  hosts: all
+  sources:
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5000       # The port EDA will open to listen for Netcool
+
+  rules:
+    - name: Auto-Heal Downed Webserver
+      # Condition evaluates the JSON fields sent by Netcool
+      condition: >
+        event.AlertGroup == "Web Services" and
+        event.Severity == 5 and
+        event.Type == 1
+      action:
+        run_workflow_template:
+          name: Ansible Examples Restart Webserver
+          organization: Default
+          job_args:
+            extra_vars:
+              _host: "{{ event.Node }}"
+              message: From EDA webhook source
+              sleep: 1

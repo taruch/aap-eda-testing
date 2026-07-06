@@ -1,0 +1,20 @@
+{
+  "event": {
+    "Identifier": "web-prod-01.company.internal:Web Services:https-443:Problem",
+    "Node": "web-prod-01.company.internal",
+    "NodeAddress": "10.240.12.8",
+    "Manager": "Netcool HTTP Probe",
+    "Agent": "PortMonitor",
+    "AlertGroup": "Web Services",
+    "AlertKey": "https-443",
+    "Severity": 5,
+    "Type": 1,
+    "Tally": 12,
+    "Summary": "CRITICAL: Connection refused on port 443. NGINX web server process is down.",
+    "FirstOccurrence": 1773752400,
+    "LastOccurrence": 1773752629,
+    "Class": 2000,
+    "StateChange": 1773752630,
+    "ExtendedAttr": "site=US-East;tier=1;app=eCommerce_Frontend"
+  }
+}

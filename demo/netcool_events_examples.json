@@ -1,0 +1,342 @@
+[
+  {
+    "scenario": "Web Service Down",
+    "event": {
+      "AlertGroup": "Web Services",
+      "Severity": 5,
+      "Type": 1,
+      "Node": "webserver01.company.internal",
+      "Summary": "HTTP service down on webserver01",
+      "FirstOccurrence": "2026-06-16T10:15:30Z",
+      "LastOccurrence": "2026-06-16T10:15:30Z",
+      "AlertKey": "HTTP_Service_Down",
+      "Identifier": "webserver01.company.internal:httpd",
+      "Class": 15000,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01"
+    }
+  },
+  {
+    "scenario": "Database Connection Pool Exhausted",
+    "event": {
+      "AlertGroup": "Database",
+      "Severity": 4,
+      "Type": 1,
+      "Node": "dbserver03.company.internal",
+      "Summary": "PostgreSQL connection pool exhausted - max connections reached",
+      "FirstOccurrence": "2026-06-16T11:22:15Z",
+      "LastOccurrence": "2026-06-16T11:25:30Z",
+      "AlertKey": "DB_Connection_Pool_Exhausted",
+      "Identifier": "dbserver03.company.internal:postgresql:5432",
+      "Class": 15001,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "max_connections": "100",
+        "current_connections": "100",
+        "waiting_connections": "45"
+      }
+    }
+  },
+  {
+    "scenario": "Disk Space Critical",
+    "event": {
+      "AlertGroup": "Storage",
+      "Severity": 5,
+      "Type": 1,
+      "Node": "appserver05.company.internal",
+      "Summary": "Disk usage critical on /var/log - 95% full",
+      "FirstOccurrence": "2026-06-16T09:45:00Z",
+      "LastOccurrence": "2026-06-16T09:45:00Z",
+      "AlertKey": "Disk_Space_Critical",
+      "Identifier": "appserver05.company.internal:/var/log",
+      "Class": 15002,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "filesystem": "/dev/sda1",
+        "mount_point": "/var/log",
+        "usage_percent": "95",
+        "available_mb": "512"
+      }
+    }
+  },
+  {
+    "scenario": "Memory Utilization High",
+    "event": {
+      "AlertGroup": "System Resources",
+      "Severity": 4,
+      "Type": 1,
+      "Node": "appserver12.company.internal",
+      "Summary": "Memory utilization exceeded 90% threshold",
+      "FirstOccurrence": "2026-06-16T14:10:22Z",
+      "LastOccurrence": "2026-06-16T14:15:22Z",
+      "AlertKey": "Memory_High",
+      "Identifier": "appserver12.company.internal:memory",
+      "Class": 15003,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "total_memory_gb": "32",
+        "used_memory_gb": "29.5",
+        "usage_percent": "92",
+        "swap_used_percent": "15"
+      }
+    }
+  },
+  {
+    "scenario": "SSL Certificate Expiring Soon",
+    "event": {
+      "AlertGroup": "Security",
+      "Severity": 3,
+      "Type": 1,
+      "Node": "loadbalancer02.company.internal",
+      "Summary": "SSL certificate expires in 7 days for *.company.internal",
+      "FirstOccurrence": "2026-06-16T08:00:00Z",
+      "LastOccurrence": "2026-06-16T08:00:00Z",
+      "AlertKey": "SSL_Cert_Expiring",
+      "Identifier": "loadbalancer02.company.internal:ssl:*.company.internal",
+      "Class": 15004,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "certificate_cn": "*.company.internal",
+        "expiry_date": "2026-06-23T23:59:59Z",
+        "days_remaining": "7",
+        "issuer": "Let's Encrypt"
+      }
+    }
+  },
+  {
+    "scenario": "Network Interface Down",
+    "event": {
+      "AlertGroup": "Network",
+      "Severity": 5,
+      "Type": 1,
+      "Node": "router01.company.internal",
+      "Summary": "Network interface eth1 is down",
+      "FirstOccurrence": "2026-06-16T12:33:45Z",
+      "LastOccurrence": "2026-06-16T12:33:45Z",
+      "AlertKey": "Interface_Down",
+      "Identifier": "router01.company.internal:eth1",
+      "Class": 15005,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "interface": "eth1",
+        "interface_type": "ethernet",
+        "admin_status": "up",
+        "oper_status": "down"
+      }
+    }
+  },
+  {
+    "scenario": "Application Response Time Degraded",
+    "event": {
+      "AlertGroup": "Application Performance",
+      "Severity": 4,
+      "Type": 1,
+      "Node": "app-api-gateway.company.internal",
+      "Summary": "API response time exceeds 5s threshold - currently 8.5s",
+      "FirstOccurrence": "2026-06-16T13:20:10Z",
+      "LastOccurrence": "2026-06-16T13:25:10Z",
+      "AlertKey": "API_Response_Slow",
+      "Identifier": "app-api-gateway.company.internal:/api/v1",
+      "Class": 15006,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "endpoint": "/api/v1/customers",
+        "response_time_ms": "8500",
+        "threshold_ms": "5000",
+        "request_count": "1523"
+      }
+    }
+  },
+  {
+    "scenario": "Backup Job Failed",
+    "event": {
+      "AlertGroup": "Backup & Recovery",
+      "Severity": 4,
+      "Type": 1,
+      "Node": "backup-server01.company.internal",
+      "Summary": "Nightly backup job failed for database dbprod01",
+      "FirstOccurrence": "2026-06-16T02:15:00Z",
+      "LastOccurrence": "2026-06-16T02:15:00Z",
+      "AlertKey": "Backup_Failed",
+      "Identifier": "backup-server01.company.internal:backup:dbprod01",
+      "Class": 15007,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "backup_type": "full",
+        "target_database": "dbprod01",
+        "error_code": "1022",
+        "error_message": "Insufficient disk space"
+      }
+    }
+  },
+  {
+    "scenario": "Container Pod CrashLoopBackOff",
+    "event": {
+      "AlertGroup": "Kubernetes",
+      "Severity": 5,
+      "Type": 1,
+      "Node": "k8s-worker03.company.internal",
+      "Summary": "Pod payment-service-7d9f8b-xyz in CrashLoopBackOff state",
+      "FirstOccurrence": "2026-06-16T15:40:12Z",
+      "LastOccurrence": "2026-06-16T15:45:12Z",
+      "AlertKey": "Pod_CrashLoop",
+      "Identifier": "k8s-worker03.company.internal:pod:payment-service-7d9f8b-xyz",
+      "Class": 15008,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "namespace": "production",
+        "pod_name": "payment-service-7d9f8b-xyz",
+        "container": "payment-app",
+        "restart_count": "15",
+        "exit_code": "137"
+      }
+    }
+  },
+  {
+    "scenario": "Message Queue Depth Exceeded",
+    "event": {
+      "AlertGroup": "Messaging",
+      "Severity": 4,
+      "Type": 1,
+      "Node": "rabbitmq-cluster01.company.internal",
+      "Summary": "Queue depth exceeded 10000 messages on orders.processing",
+      "FirstOccurrence": "2026-06-16T16:05:30Z",
+      "LastOccurrence": "2026-06-16T16:10:30Z",
+      "AlertKey": "Queue_Depth_High",
+      "Identifier": "rabbitmq-cluster01.company.internal:queue:orders.processing",
+      "Class": 15009,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "queue_name": "orders.processing",
+        "message_count": "15432",
+        "threshold": "10000",
+        "consumer_count": "3",
+        "publish_rate": "250/sec"
+      }
+    }
+  },
+  {
+    "scenario": "DNS Resolution Failure",
+    "event": {
+      "AlertGroup": "Network Services",
+      "Severity": 5,
+      "Type": 1,
+      "Node": "dns-server02.company.internal",
+      "Summary": "DNS server not responding to queries",
+      "FirstOccurrence": "2026-06-16T10:55:00Z",
+      "LastOccurrence": "2026-06-16T10:55:00Z",
+      "AlertKey": "DNS_Down",
+      "Identifier": "dns-server02.company.internal:dns:53",
+      "Class": 15010,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "service": "bind9",
+        "port": "53",
+        "failed_queries": "127"
+      }
+    }
+  },
+  {
+    "scenario": "Load Balancer Backend Unhealthy",
+    "event": {
+      "AlertGroup": "Load Balancing",
+      "Severity": 4,
+      "Type": 1,
+      "Node": "lb-prod01.company.internal",
+      "Summary": "2 of 5 backend servers marked unhealthy in pool web-tier",
+      "FirstOccurrence": "2026-06-16T11:30:22Z",
+      "LastOccurrence": "2026-06-16T11:35:22Z",
+      "AlertKey": "LB_Backend_Unhealthy",
+      "Identifier": "lb-prod01.company.internal:pool:web-tier",
+      "Class": 15011,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "pool_name": "web-tier",
+        "total_backends": "5",
+        "healthy_backends": "3",
+        "unhealthy_backends": "2",
+        "unhealthy_nodes": ["web03.company.internal", "web05.company.internal"]
+      }
+    }
+  },
+  {
+    "scenario": "CPU Temperature Critical",
+    "event": {
+      "AlertGroup": "Hardware",
+      "Severity": 5,
+      "Type": 1,
+      "Node": "compute-node15.company.internal",
+      "Summary": "CPU temperature critical - 95°C (threshold 90°C)",
+      "FirstOccurrence": "2026-06-16T14:45:00Z",
+      "LastOccurrence": "2026-06-16T14:45:00Z",
+      "AlertKey": "CPU_Temp_Critical",
+      "Identifier": "compute-node15.company.internal:cpu:temp",
+      "Class": 15012,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "current_temp_celsius": "95",
+        "threshold_celsius": "90",
+        "cpu_id": "0",
+        "fan_speed_rpm": "4200"
+      }
+    }
+  },
+  {
+    "scenario": "License Expiration Warning",
+    "event": {
+      "AlertGroup": "Licensing",
+      "Severity": 3,
+      "Type": 1,
+      "Node": "license-server01.company.internal",
+      "Summary": "Software license expires in 14 days for Oracle Database",
+      "FirstOccurrence": "2026-06-16T09:00:00Z",
+      "LastOccurrence": "2026-06-16T09:00:00Z",
+      "AlertKey": "License_Expiring",
+      "Identifier": "license-server01.company.internal:license:oracle-db",
+      "Class": 15013,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "product": "Oracle Database Enterprise Edition",
+        "license_key": "XXXX-XXXX-XXXX-1234",
+        "expiry_date": "2026-06-30",
+        "days_remaining": "14"
+      }
+    }
+  },
+  {
+    "scenario": "Firewall Rule Violation Detected",
+    "event": {
+      "AlertGroup": "Security",
+      "Severity": 4,
+      "Type": 13,
+      "Node": "firewall-dmz01.company.internal",
+      "Summary": "Multiple blocked connection attempts from suspicious IP",
+      "FirstOccurrence": "2026-06-16T17:22:15Z",
+      "LastOccurrence": "2026-06-16T17:27:15Z",
+      "AlertKey": "Firewall_Violation",
+      "Identifier": "firewall-dmz01.company.internal:blocked:192.0.2.45",
+      "Class": 15014,
+      "Manager": "NetcoolProbe",
+      "ServerName": "netcool-objectserver-01",
+      "ExtendedAttr": {
+        "source_ip": "192.0.2.45",
+        "destination_port": "22",
+        "blocked_count": "47",
+        "rule_id": "DMZ-DENY-SSH"
+      }
+    }
+  }
+]

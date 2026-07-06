@@ -1,0 +1,27 @@
+---
+- name: Query Netcool Event Status via REST API
+  hosts: localhost
+  gather_facts: false
+  vars:
+    netcool_host: "netcool-primary.company.internal"
+    netcool_port: "8081" # Default Netcool HTTP API port
+    target_node: "web-prod-01.company.internal"
+
+  tasks:
+    - name: Get current event status from Netcool ObjectServer
+      ansible.builtin.uri:
+        url: "http://{{ netcool_host }}:{{ netcool_port }}/objectserver/restapi/alerts/status?filter=Node='{{ target_node }}'%20AND%20Severity=5"
+        method: GET
+        user: "root"                     # Your ObjectServer username
+        password: "your_password_here"   # Your ObjectServer password
+        force_basic_auth: true
+        headers:
+          Accept: "application/json"
+      register: netcool_response
+
+    - name: Parse Event Status
+      ansible.builtin.debug:
+        msg: >
+          Found {{ netcool_response.json.rowset.rows | length }} active critical events.
+          First event summary: {{ netcool_response.json.rowset.rows[0].Summary }}
+      when: netcool_response.json.rowset.rows | length > 0
