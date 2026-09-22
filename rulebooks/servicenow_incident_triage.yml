@@ -1,0 +1,165 @@
+---
+- name: ServiceNow Incident Triage with AI Fallback
+  hosts: all
+  sources:
+    - servicenow.itsm.records:
+        table: incident
+        interval: 30
+        sysparm_query: "active=true^state=1^u_automated_remediation=true"
+        remote_servicenow_timezone: "US/Eastern"
+
+  match_multiple_rules: false
+
+  rules:
+    # --- Known Issue: Critical Application Outage ---
+    - name: Application Outage - Auto Restart Services
+      condition: >
+        event.category == "Software" and
+        event.subcategory == "Application" and
+        event.priority | int <= 2
+      action:
+        run_workflow_template:
+          name: Application Emergency Restart
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              configuration_item: "{{ event.configuration_item }}"
+              business_service: "{{ event.business_service }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- Known Issue: Database Performance ---
+    - name: Database Performance - Run Optimization
+      condition: >
+        event.category == "Database" and
+        event.subcategory == "Performance"
+      action:
+        run_job_template:
+          name: Database Performance Tuning
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              target_database: "{{ event.configuration_item }}"
+              cmdb_ci: "{{ event.cmdb_ci }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- Known Issue: Storage Capacity ---
+    - name: Storage Capacity Critical - Auto Cleanup
+      condition: >
+        event.category == "Storage" and
+        event.subcategory == "Capacity"
+      action:
+        run_job_template:
+          name: Storage Cleanup and Archival
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              storage_device: "{{ event.configuration_item }}"
+              cmdb_ci: "{{ event.cmdb_ci }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- Known Issue: Network Connectivity ---
+    - name: Network Connectivity - Restart Interface
+      condition: >
+        event.category == "Network" and
+        event.subcategory == "Connectivity"
+      action:
+        run_job_template:
+          name: Network Interface Restart
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              affected_device: "{{ event.configuration_item }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- Known Issue: Security - Brute Force ---
+    - name: Security - Block Brute Force Attack
+      condition: >
+        event.category == "Security" and
+        event.subcategory == "Authentication" and
+        event.short_description is search("brute force|failed login", ignorecase=true)
+      action:
+        run_job_template:
+          name: Firewall Block Malicious IP
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              firewall_ci: "{{ event.cmdb_ci }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- Known Issue: SSL Certificate Expiry ---
+    - name: Certificate Expiring - Auto Renew
+      condition: >
+        event.category == "Security" and
+        event.subcategory == "Certificates"
+      action:
+        run_job_template:
+          name: Certificate Auto Renewal
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              cert_manager: "{{ event.cmdb_ci }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- Known Issue: Backup Failures ---
+    - name: Backup Failure - Retry with Cleanup
+      condition: >
+        event.category == "Backup" and
+        event.subcategory == "Job Failure"
+      action:
+        run_job_template:
+          name: Backup Cleanup and Retry
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              backup_server: "{{ event.cmdb_ci }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- Known Issue: Kubernetes Pod Issues ---
+    - name: Kubernetes Pod CrashLoop - Restart
+      condition: >
+        event.category == "Platform" and
+        event.subcategory == "Kubernetes"
+      action:
+        run_job_template:
+          name: Kubernetes Pod Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              k8s_cluster: "{{ event.configuration_item }}"
+              short_description: "{{ event.short_description }}"
+
+    # --- AI FALLBACK: Unmatched incidents go to AI for triage ---
+    - name: AI Triage - Evaluate Unmatched Incident
+      condition: event.number is defined
+      action:
+        run_job_template:
+          name: AI Triage and Analysis
+          organization: Default
+          job_args:
+            extra_vars:
+              incident_number: "{{ event.number }}"
+              incident_sys_id: "{{ event.sys_id }}"
+              category: "{{ event.category }}"
+              subcategory: "{{ event.subcategory | default('') }}"
+              priority: "{{ event.priority }}"
+              configuration_item: "{{ event.configuration_item }}"
+              cmdb_ci: "{{ event.cmdb_ci }}"
+              short_description: "{{ event.short_description }}"
+              description: "{{ event.description }}"
+              business_service: "{{ event.business_service | default('') }}"
