@@ -58,7 +58,7 @@
       condition: >
         event.AlertGroup == "System Resources" and
         event.AlertKey == "Memory_High" and
-        event.ExtendedAttr.usage_percent | int > 90
+        event.ExtendedAttr.usage_percent> 90
       action:
         run_job_template:
           name: Service Memory Optimization
@@ -73,7 +73,7 @@
       condition: >
         event.AlertGroup == "Security" and
         event.AlertKey == "SSL_Cert_Expiring" and
-        event.ExtendedAttr.days_remaining | int <= 14
+        event.ExtendedAttr.days_remaining<= 14
       action:
         run_job_template:
           name: Certificate Renewal
@@ -103,7 +103,7 @@
       condition: >
         event.AlertGroup == "Application Performance" and
         event.AlertKey == "API_Response_Slow" and
-        event.ExtendedAttr.response_time_ms | int > 7000
+        event.ExtendedAttr.response_time_ms> 7000
       action:
         run_job_template:
           name: Application Auto-Scale
@@ -134,7 +134,7 @@
       condition: >
         event.AlertGroup == "Kubernetes" and
         event.AlertKey == "Pod_CrashLoop" and
-        event.ExtendedAttr.restart_count | int > 10
+        event.ExtendedAttr.restart_count> 10
       action:
         run_job_template:
           name: Kubernetes Pod Restart
@@ -150,7 +150,7 @@
       condition: >
         event.AlertGroup == "Messaging" and
         event.AlertKey == "Queue_Depth_High" and
-        event.ExtendedAttr.message_count | int > 12000
+        event.ExtendedAttr.message_count> 12000
       action:
         run_job_template:
           name: RabbitMQ Scale Consumers
@@ -181,7 +181,7 @@
       condition: >
         event.AlertGroup == "Load Balancing" and
         event.AlertKey == "LB_Backend_Unhealthy" and
-        event.ExtendedAttr.healthy_backends | int < 3
+        event.ExtendedAttr.healthy_backends< 3
       action:
         run_job_template:
           name: Load Balancer Health Management
@@ -197,7 +197,7 @@
       condition: >
         event.AlertGroup == "Hardware" and
         event.AlertKey == "CPU_Temp_Critical" and
-        event.ExtendedAttr.current_temp_celsius | int > 90
+        event.ExtendedAttr.current_temp_celsius> 90
       action:
         run_job_template:
           name: Hardware Emergency Notification
@@ -214,7 +214,7 @@
         event.AlertGroup == "Security" and
         event.Type == 13 and
         event.AlertKey == "Firewall_Violation" and
-        event.ExtendedAttr.blocked_count | int > 30
+        event.ExtendedAttr.blocked_count> 30
       action:
         run_job_template:
           name: Firewall Block IP Address

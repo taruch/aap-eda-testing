@@ -34,7 +34,7 @@
       condition: >
         event.category == "Database" and
         event.subcategory == "Performance" and
-        event.priority | int <= 2 and
+        (event.priority == "1" or event.priority == "2") and
         event.u_automated_remediation == "true"
       action:
         run_job_template:
@@ -106,7 +106,8 @@
         event.category == "Backup" and
         event.subcategory == "Job Failure" and
         event.u_automated_remediation == "true" and
-        event.u_rpo_violation | default('false') == "true"
+        event.u_rpo_violation is defined and
+        event.u_rpo_violation == "true"
       action:
         run_job_template:
           name: Backup Cleanup and Retry
@@ -192,7 +193,8 @@
     - name: Monitoring Down - Blind Operations Alert
       condition: >
         event.category == "Monitoring" and
-        event.u_blind_operations | default('false') == "true" and
+        event.u_blind_operations is defined and
+        event.u_blind_operations == "true" and
         event.state == "1"
       action:
         run_job_template:
@@ -247,7 +249,7 @@
         event.category == "Security" and
         event.subcategory == "Patching" and
         event.u_cvss_score is defined and
-        event.u_cvss_score | float >= 9.0 and
+        event.u_cvss_score >= 9.0 and
         event.u_patch_available == "true" and
         event.u_automated_remediation == "true"
       action:

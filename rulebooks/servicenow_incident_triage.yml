@@ -14,8 +14,8 @@
     # --- Known Issue: Critical Application Outage ---
     - name: Application Outage - Auto Restart Services
       condition: >
-        event.category == "Software" and
-        event.subcategory == "Application" and
+        event.category == "software" and
+        event.subcategory == "application" and
         (event.priority == "1" or event.priority == "2")
       action:
         run_workflow_template:
@@ -25,15 +25,15 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              configuration_item: "{{ event.configuration_item }}"
-              business_service: "{{ event.business_service }}"
-              short_description: "{{ event.short_description }}"
+              configuration_item: "{{ event.configuration_item | default('') }}"
+              business_service: "{{ event.business_service | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- Known Issue: Database Performance ---
     - name: Database Performance - Run Optimization
       condition: >
-        event.category == "Database" and
-        event.subcategory == "Performance"
+        event.category == "database" and
+        event.subcategory == "performance"
       action:
         run_job_template:
           name: Database Performance Tuning
@@ -42,15 +42,15 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              target_database: "{{ event.configuration_item }}"
-              cmdb_ci: "{{ event.cmdb_ci }}"
-              short_description: "{{ event.short_description }}"
+              target_database: "{{ event.configuration_item | default('') }}"
+              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- Known Issue: Storage Capacity ---
     - name: Storage Capacity Critical - Auto Cleanup
       condition: >
-        event.category == "Storage" and
-        event.subcategory == "Capacity"
+        event.category == "storage" and
+        event.subcategory == "capacity"
       action:
         run_job_template:
           name: Storage Cleanup and Archival
@@ -59,15 +59,15 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              storage_device: "{{ event.configuration_item }}"
-              cmdb_ci: "{{ event.cmdb_ci }}"
-              short_description: "{{ event.short_description }}"
+              storage_device: "{{ event.configuration_item | default('') }}"
+              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- Known Issue: Network Connectivity ---
     - name: Network Connectivity - Restart Interface
       condition: >
-        event.category == "Network" and
-        event.subcategory == "Connectivity"
+        event.category == "network" and
+        event.subcategory == "connectivity"
       action:
         run_job_template:
           name: Network Interface Restart
@@ -76,14 +76,14 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              affected_device: "{{ event.configuration_item }}"
-              short_description: "{{ event.short_description }}"
+              affected_device: "{{ event.configuration_item | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- Known Issue: Security - Brute Force ---
     - name: Security - Block Brute Force Attack
       condition: >
-        event.category == "Security" and
-        event.subcategory == "Authentication" and
+        event.category == "security" and
+        event.subcategory == "authentication" and
         event.short_description is search("(?i)brute force|failed login")
       action:
         run_job_template:
@@ -93,14 +93,14 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              firewall_ci: "{{ event.cmdb_ci }}"
-              short_description: "{{ event.short_description }}"
+              firewall_ci: "{{ event.cmdb_ci | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- Known Issue: SSL Certificate Expiry ---
     - name: Certificate Expiring - Auto Renew
       condition: >
-        event.category == "Security" and
-        event.subcategory == "Certificates"
+        event.category == "security" and
+        event.subcategory == "certificates"
       action:
         run_job_template:
           name: Certificate Auto Renewal
@@ -109,14 +109,14 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              cert_manager: "{{ event.cmdb_ci }}"
-              short_description: "{{ event.short_description }}"
+              cert_manager: "{{ event.cmdb_ci | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- Known Issue: Backup Failures ---
     - name: Backup Failure - Retry with Cleanup
       condition: >
-        event.category == "Backup" and
-        event.subcategory == "Job Failure"
+        event.category == "backup" and
+        event.subcategory == "job failure"
       action:
         run_job_template:
           name: Backup Cleanup and Retry
@@ -125,14 +125,14 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              backup_server: "{{ event.cmdb_ci }}"
-              short_description: "{{ event.short_description }}"
+              backup_server: "{{ event.cmdb_ci | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- Known Issue: Kubernetes Pod Issues ---
     - name: Kubernetes Pod CrashLoop - Restart
       condition: >
-        event.category == "Platform" and
-        event.subcategory == "Kubernetes"
+        event.category == "platform" and
+        event.subcategory == "kubernetes"
       action:
         run_job_template:
           name: Kubernetes Pod Recovery
@@ -141,8 +141,8 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              k8s_cluster: "{{ event.configuration_item }}"
-              short_description: "{{ event.short_description }}"
+              k8s_cluster: "{{ event.configuration_item | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
 
     # --- AI FALLBACK: Unmatched incidents go to AI for triage ---
     - name: AI Triage - Evaluate Unmatched Incident
@@ -155,11 +155,11 @@
             extra_vars:
               incident_number: "{{ event.number }}"
               incident_sys_id: "{{ event.sys_id }}"
-              category: "{{ event.category }}"
+              category: "{{ event.category | default('') }}"
               subcategory: "{{ event.subcategory | default('') }}"
-              priority: "{{ event.priority }}"
-              configuration_item: "{{ event.configuration_item }}"
-              cmdb_ci: "{{ event.cmdb_ci }}"
-              short_description: "{{ event.short_description }}"
-              description: "{{ event.description }}"
+              priority: "{{ event.priority | default('') }}"
+              configuration_item: "{{ event.configuration_item | default('') }}"
+              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
+              short_description: "{{ event.short_description | default('') }}"
+              description: "{{ event.description | default('') }}"
               business_service: "{{ event.business_service | default('') }}"
