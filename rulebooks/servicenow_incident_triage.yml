@@ -16,7 +16,7 @@
       condition: >
         event.category == "Software" and
         event.subcategory == "Application" and
-        event.priority | int <= 2
+        (event.priority == "1" or event.priority == "2")
       action:
         run_workflow_template:
           name: Application Emergency Restart
@@ -84,7 +84,7 @@
       condition: >
         event.category == "Security" and
         event.subcategory == "Authentication" and
-        event.short_description is search("brute force|failed login", ignorecase=true)
+        event.short_description is search("(?i)brute force|failed login")
       action:
         run_job_template:
           name: Firewall Block Malicious IP
