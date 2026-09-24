@@ -1,178 +1,89 @@
 ---
-- name: Listen for events on dt_webhook
+- name: Dynatrace Event Triage with AI Fallback
   hosts: all
   sources:
     - dynatrace.event_driven_ansible.dt_webhook:
         host: 0.0.0.0
         port: 5000
-        token: '{{ dt_webhook_token | default(omit) }}'
+        token: "{{ dt_webhook_token }}"
+
+  match_multiple_rules: false
 
   rules:
-    # - name: Event payload is defined
+    # # --- Known Issue: Service/Host Unavailability ---
+    # - name: Availability - Service Restoration
     #   condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
-    #   # condition: event.display_id is defined
     #   action:
     #     run_workflow_template:
     #       name: DYNATRACE Service Restoration
     #       organization: Default
     #       job_args:
     #         extra_vars:
-    #           display_id: "{{ event.payload.eventData['display_id'] }}"
-    #           problem_id: "{{ event.payload.eventData['event.id'] }}"
-    #           _hosts: "{{ event.payload.eventData['host.name'] }}"
+    #           display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+    #           problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+    #           event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+    #           _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
     #           root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
-    # --- Known Issue: Critical Application Outage ---
-    - name: Application Outage - Auto Restart Services
-      condition: >
-        event.category == "software" and
-        event.subcategory == "application" and
-        (event.priority == "1" or event.priority == "2")
-      action:
-        run_workflow_template:
-          name: Application Emergency Restart
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              configuration_item: "{{ event.configuration_item | default('') }}"
-              business_service: "{{ event.business_service | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
-
-    # --- Known Issue: Database Performance ---
-    - name: Database Performance - Run Optimization
-      condition: >
-        event.category == "database" and
-        event.subcategory == "performance"
+    # --- Known Issue: Error Rate Increase ---
+    - name: Error - Investigate Error Spike
+      condition: event.payload.eventData['event.category'] == 'ERROR'
       action:
         run_job_template:
-          name: Database Performance Tuning
+          name: DYNATRACE Error Investigation
           organization: Default
           job_args:
             extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              target_database: "{{ event.configuration_item | default('') }}"
-              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+              display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+              event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+              _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
-    # --- Known Issue: Storage Capacity ---
-    - name: Storage Capacity Critical - Auto Cleanup
-      condition: >
-        event.category == "storage" and
-        event.subcategory == "capacity"
+    # --- Known Issue: Performance Degradation ---
+    - name: Slowdown - Performance Optimization
+      condition: event.payload.eventData['event.category'] == 'SLOWDOWN'
       action:
         run_job_template:
-          name: Storage Cleanup and Archival
+          name: DYNATRACE Performance Optimization
           organization: Default
           job_args:
             extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              storage_device: "{{ event.configuration_item | default('') }}"
-              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+              display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+              event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+              _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
-    # --- Known Issue: Network Connectivity ---
-    - name: Network Connectivity - Restart Interface
-      condition: >
-        event.category == "network" and
-        event.subcategory == "connectivity"
+    # --- Known Issue: Resource Contention (CPU/Memory/Disk) ---
+    - name: Resource Contention - Scale or Optimize Resources
+      condition: event.payload.eventData['event.category'] == 'RESOURCE_CONTENTION'
       action:
         run_job_template:
-          name: Network Interface Restart
+          name: DYNATRACE Resource Optimization
           organization: Default
           job_args:
             extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              affected_device: "{{ event.configuration_item | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+              display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+              event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+              _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
-    # --- Known Issue: Security - Brute Force ---
-    - name: Security - Block Brute Force Attack
-      condition: >
-        event.category == "security" and
-        event.subcategory == "authentication" and
-        event.short_description is search("(?i)brute force|failed login")
-      action:
-        run_job_template:
-          name: Firewall Block Malicious IP
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              firewall_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
-
-    # --- Known Issue: SSL Certificate Expiry ---
-    - name: Certificate Expiring - Auto Renew
-      condition: >
-        event.category == "security" and
-        event.subcategory == "certificates"
-      action:
-        run_job_template:
-          name: Certificate Auto Renewal
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              cert_manager: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
-
-    # --- Known Issue: Backup Failures ---
-    - name: Backup Failure - Retry with Cleanup
-      condition: >
-        event.category == "backup" and
-        event.subcategory == "job failure"
-      action:
-        run_job_template:
-          name: Backup Cleanup and Retry
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              backup_server: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
-
-    # --- Known Issue: Kubernetes Pod Issues ---
-    - name: Kubernetes Pod CrashLoop - Restart
-      condition: >
-        event.category == "platform" and
-        event.subcategory == "kubernetes"
-      action:
-        run_job_template:
-          name: Kubernetes Pod Recovery
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              k8s_cluster: "{{ event.configuration_item | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
-
-    # --- AI FALLBACK: Unmatched incidents go to AI for triage ---
-    - name: AI Triage - Evaluate Unmatched Incident
-      condition: event.number is defined
+    # --- AI FALLBACK: Unmatched events go to AI for triage ---
+    - name: AI Triage - Evaluate Unmatched Event
+      condition: event.payload is defined
       action:
         run_job_template:
           name: AI Triage and Analysis
           organization: Default
           job_args:
             extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              category: "{{ event.category | default('') }}"
-              subcategory: "{{ event.subcategory | default('') }}"
-              priority: "{{ event.priority | default('') }}"
-              configuration_item: "{{ event.configuration_item | default('') }}"
-              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
-              description: "{{ event.description | default('') }}"
-              business_service: "{{ event.business_service | default('') }}"
+              display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+              event_category: "{{ event.payload.eventData['event.category'] | default('') }}"
+              event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+              _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
 ...
