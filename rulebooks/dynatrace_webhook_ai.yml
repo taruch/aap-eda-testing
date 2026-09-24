@@ -8,19 +8,19 @@
         token: '{{ dt_webhook_token | default(omit) }}'
 
   rules:
-    - name: Event payload is defined
-      condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
-      # condition: event.display_id is defined
-      action:
-        run_workflow_template:
-          name: DYNATRACE Service Restoration
-          organization: Default
-          job_args:
-            extra_vars:
-              display_id: "{{ event.payload.eventData['display_id'] }}"
-              problem_id: "{{ event.payload.eventData['event.id'] }}"
-              _hosts: "{{ event.payload.eventData['host.name'] }}"
-              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+    # - name: Event payload is defined
+    #   condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+    #   # condition: event.display_id is defined
+    #   action:
+    #     run_workflow_template:
+    #       name: DYNATRACE Service Restoration
+    #       organization: Default
+    #       job_args:
+    #         extra_vars:
+    #           display_id: "{{ event.payload.eventData['display_id'] }}"
+    #           problem_id: "{{ event.payload.eventData['event.id'] }}"
+    #           _hosts: "{{ event.payload.eventData['host.name'] }}"
+    #           root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
 
     # --- Known Issue: Critical Application Outage ---
     - name: Application Outage - Auto Restart Services
