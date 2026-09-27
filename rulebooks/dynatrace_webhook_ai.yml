@@ -75,11 +75,12 @@
       condition: event.payload is defined
       action:
         run_job_template:
-          name: AI Triage and Analysis
+          name: AI Triage and Analysis From Dynatrace
           organization: Default
           job_args:
             extra_vars:
               display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              event: "{{ event.payload.eventData['event.description'] | default('') }}"
               problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
               event_category: "{{ event.payload.eventData['event.category'] | default('') }}"
               event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
