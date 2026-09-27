@@ -1,0 +1,84 @@
+---
+- name: Dynatrace Event Triage with AI Fallback
+  hosts: all
+  sources:
+    - dynatrace.event_driven_ansible.dt_webhook:
+        host: 0.0.0.0
+        port: 5000
+        token: "{{ dt_webhook_token }}"
+
+  match_multiple_rules: false
+
+  rules:
+    # # --- Known Issue: Service/Host Unavailability ---
+    # - name: Availability - Service Restoration
+    #   condition: event.payload.eventData['event.category'] == 'AVAILABILITY'
+    #   action:
+    #     run_workflow_template:
+    #       name: DYNATRACE Service Restoration
+    #       organization: Default
+    #       job_args:
+    #         extra_vars:
+    #           display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+    #           problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+    #           event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+    #           _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+    #           root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+
+    # --- Known Issue: Error Rate Increase ---
+    - name: Error - Investigate Error Spike
+      condition: event.payload.eventData['event.category'] == 'ERROR'
+      action:
+        run_job_template:
+          name: DYNATRACE Error Investigation
+          organization: Default
+          job_args:
+            extra_vars:
+              display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+              event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+              _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+
+    # --- Known Issue: Performance Degradation ---
+    - name: Slowdown - Performance Optimization
+      condition: event.payload.eventData['event.category'] == 'SLOWDOWN'
+      action:
+        run_job_template:
+          name: DYNATRACE Performance Optimization
+          organization: Default
+          job_args:
+            extra_vars:
+              display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+              event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+              _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+
+    # --- Known Issue: Resource Contention (CPU/Memory/Disk) ---
+    - name: Resource Contention - Scale or Optimize Resources
+      condition: event.payload.eventData['event.category'] == 'RESOURCE_CONTENTION'
+      action:
+        run_job_template:
+          name: DYNATRACE Resource Optimization
+          organization: Default
+          job_args:
+            extra_vars:
+              display_id: "{{ event.payload.eventData['display_id'] | default('') }}"
+              problem_id: "{{ event.payload.eventData['event.id'] | default('') }}"
+              event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
+              _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
+              root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+
+    # --- AI FALLBACK: Unmatched events go to AI for triage ---
+    - name: AI Triage - Evaluate Unmatched Event
+      condition: event.payload is defined
+      action:
+        run_job_template:
+          name: AI Triage and Analysis From Dynatrace
+          organization: Default
+          job_args:
+            extra_vars:
+              event_payload: "{{ event.payload }}"
+
+...
