@@ -86,5 +86,6 @@
               event_name: "{{ event.payload.eventData['event.name'] | default('') }}"
               _hosts: "{{ event.payload.eventData['host.name'] | default('') }}"
               root_cause: "{{ event.payload.eventData['root_cause_entity_name'] | default('') }}"
+              event_payload: "{{ event.payload }}"
 
 ...
