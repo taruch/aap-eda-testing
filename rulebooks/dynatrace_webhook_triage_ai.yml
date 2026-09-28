@@ -75,7 +75,7 @@
       condition: event.payload is defined
       action:
         run_job_template:
-          name: AI Triage and Analysis From Dynatrace
+          name: AI Triage and Analysis From Event Source
           organization: Default
           job_args:
             extra_vars:
