@@ -1,0 +1,669 @@
+---
+- name: Multi-Scenario Microsoft Windows Event Handler
+  hosts: all
+  sources:
+    - ansible.eda.webhook:
+        host: 0.0.0.0
+        port: 5000
+        token: "{{ WEBHOOK_TOKEN | default('') }}"
+      filters:
+        - ansible.eda.json_filter:
+            exclude_keys: ['sender', 'owner']
+        - ansible.eda.dashes_to_underscores:
+
+  rules:
+    # =========================================================================
+    # Active Directory Events
+    # =========================================================================
+
+    # AD Account Lockout - Auto Investigate and Unlock
+    - name: AD Account Lockout - Investigate and Unlock
+      condition: >
+        event.payload.source == "ActiveDirectory" and
+        event.payload.event_id == 4740 and
+        event.payload.severity is defined and
+        event.payload.severity >= 3
+      action:
+        run_workflow_template:
+          name: AD Account Lockout Investigation
+          organization: Default
+          job_args:
+            extra_vars:
+              locked_account: "{{ event.payload.target_username }}"
+              lockout_source: "{{ event.payload.caller_computer }}"
+              domain_controller: "{{ event.payload.domain_controller }}"
+              lockout_time: "{{ event.payload.timestamp }}"
+              event_id: "{{ event.payload.event_id }}"
+
+    # AD Privileged Group Membership Change
+    - name: AD Privileged Group Change - Alert and Audit
+      condition: >
+        event.payload.source == "ActiveDirectory" and
+        (event.payload.event_id == 4728 or
+         event.payload.event_id == 4732 or
+         event.payload.event_id == 4756) and
+        event.payload.target_group is search("Domain Admins|Enterprise Admins|Schema Admins|Administrators",
+                                             ignorecase=true)
+      action:
+        run_workflow_template:
+          name: AD Privileged Group Change Audit
+          organization: Default
+          job_args:
+            extra_vars:
+              changed_by: "{{ event.payload.subject_username }}"
+              target_user: "{{ event.payload.member_name }}"
+              target_group: "{{ event.payload.target_group }}"
+              domain_controller: "{{ event.payload.domain_controller }}"
+              change_type: "member_added"
+              event_id: "{{ event.payload.event_id }}"
+
+    # AD Replication Failure
+    - name: AD Replication Failure - Diagnose and Repair
+      condition: >
+        event.payload.source == "ActiveDirectory" and
+        event.payload.alert_type == "ReplicationFailure" and
+        event.payload.severity >= 4
+      action:
+        run_job_template:
+          name: AD Replication Diagnostics
+          organization: Default
+          job_args:
+            extra_vars:
+              source_dc: "{{ event.payload.source_dc }}"
+              destination_dc: "{{ event.payload.destination_dc }}"
+              naming_context: "{{ event.payload.naming_context | default('') }}"
+              error_code: "{{ event.payload.error_code }}"
+              consecutive_failures: "{{ event.payload.consecutive_failures | default(1) }}"
+
+    # AD Password Expiration Warning
+    - name: AD Password Expiring - Notify and Extend
+      condition: >
+        event.payload.source == "ActiveDirectory" and
+        event.payload.alert_type == "PasswordExpiring" and
+        event.payload.days_remaining is defined and
+        event.payload.days_remaining <= 7
+      action:
+        run_job_template:
+          name: AD Password Expiry Notification
+          organization: Default
+          job_args:
+            extra_vars:
+              username: "{{ event.payload.target_username }}"
+              days_remaining: "{{ event.payload.days_remaining }}"
+              email: "{{ event.payload.user_email | default('') }}"
+              manager: "{{ event.payload.manager | default('') }}"
+
+    # AD LDAP Service Degradation
+    - name: AD LDAP Service Degraded - Restart and Validate
+      condition: >
+        event.payload.source == "ActiveDirectory" and
+        event.payload.alert_type == "LDAPServiceDegraded" and
+        event.payload.response_time_ms > 5000
+      action:
+        run_job_template:
+          name: AD LDAP Service Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              domain_controller: "{{ event.payload.domain_controller }}"
+              response_time_ms: "{{ event.payload.response_time_ms }}"
+              ldap_connections: "{{ event.payload.current_connections | default(0) }}"
+
+    # AD GPO Processing Failure
+    - name: AD Group Policy Processing Failure
+      condition: >
+        event.payload.source == "ActiveDirectory" and
+        (event.payload.event_id == 1030 or
+         event.payload.event_id == 1058 or
+         event.payload.event_id == 1129) and
+        event.payload.severity >= 3
+      action:
+        run_job_template:
+          name: GPO Processing Diagnostics
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              gpo_name: "{{ event.payload.gpo_name | default('') }}"
+              event_id: "{{ event.payload.event_id }}"
+              error_description: "{{ event.payload.error_description | default('') }}"
+
+    # =========================================================================
+    # Windows Service Outages
+    # =========================================================================
+
+    # IIS Web Server Down
+    - name: IIS Application Pool Crash - Recycle and Validate
+      condition: >
+        event.payload.source == "IIS" and
+        event.payload.alert_type == "AppPoolCrash" and
+        event.payload.severity >= 4
+      action:
+        run_workflow_template:
+          name: IIS Application Pool Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.server_name }}"
+              app_pool_name: "{{ event.payload.app_pool_name }}"
+              site_name: "{{ event.payload.site_name | default('') }}"
+              process_id: "{{ event.payload.process_id | default('') }}"
+              crash_reason: "{{ event.payload.failure_reason | default('unknown') }}"
+
+    # IIS High Request Queue
+    - name: IIS Request Queue Full - Scale Workers
+      condition: >
+        event.payload.source == "IIS" and
+        event.payload.alert_type == "RequestQueueHigh" and
+        event.payload.queue_length > 1000
+      action:
+        run_job_template:
+          name: IIS Worker Process Scaling
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.server_name }}"
+              app_pool_name: "{{ event.payload.app_pool_name }}"
+              current_queue_length: "{{ event.payload.queue_length }}"
+              current_workers: "{{ event.payload.worker_count | default(1) }}"
+
+    # SQL Server Service Down
+    - name: SQL Server Service Down - Restart and Verify
+      condition: >
+        event.payload.source == "SQLServer" and
+        event.payload.alert_type == "ServiceDown" and
+        event.payload.service_name is search("MSSQLSERVER|SQLSERVERAGENT|MSSQLFDLauncher",
+                                              ignorecase=true)
+      action:
+        run_workflow_template:
+          name: SQL Server Service Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.server_name }}"
+              service_name: "{{ event.payload.service_name }}"
+              instance_name: "{{ event.payload.instance_name | default('MSSQLSERVER') }}"
+              last_error: "{{ event.payload.error_message | default('') }}"
+
+    # SQL Server Long Running Queries
+    - name: SQL Server Blocking Queries - Kill and Alert
+      condition: >
+        event.payload.source == "SQLServer" and
+        event.payload.alert_type == "BlockingQueries" and
+        event.payload.blocked_process_count > 5
+      action:
+        run_job_template:
+          name: SQL Server Blocking Resolution
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.server_name }}"
+              instance_name: "{{ event.payload.instance_name | default('MSSQLSERVER') }}"
+              lead_blocker_spid: "{{ event.payload.lead_blocker_spid }}"
+              blocked_count: "{{ event.payload.blocked_process_count }}"
+              wait_time_seconds: "{{ event.payload.wait_time_seconds | default(0) }}"
+
+    # SQL Server Database Space Critical
+    - name: SQL Server Database Space Critical - Shrink and Alert
+      condition: >
+        event.payload.source == "SQLServer" and
+        event.payload.alert_type == "DatabaseSpaceCritical" and
+        event.payload.free_space_percent < 10
+      action:
+        run_job_template:
+          name: SQL Server Database Space Management
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.server_name }}"
+              database_name: "{{ event.payload.database_name }}"
+              free_space_percent: "{{ event.payload.free_space_percent }}"
+              instance_name: "{{ event.payload.instance_name | default('MSSQLSERVER') }}"
+
+    # Exchange Mail Flow Disruption
+    - name: Exchange Mail Flow Down - Restart Transport Service
+      condition: >
+        event.payload.source == "Exchange" and
+        event.payload.alert_type == "MailFlowDisruption" and
+        event.payload.queue_length > 500
+      action:
+        run_workflow_template:
+          name: Exchange Mail Flow Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.server_name }}"
+              queue_type: "{{ event.payload.queue_type | default('Submission') }}"
+              queue_length: "{{ event.payload.queue_length }}"
+              last_delivery_time: "{{ event.payload.last_delivery_time | default('') }}"
+
+    # Exchange Database Failover
+    - name: Exchange Database Failover - Validate and Rebalance
+      condition: >
+        event.payload.source == "Exchange" and
+        event.payload.alert_type == "DatabaseFailover" and
+        event.payload.severity >= 4
+      action:
+        run_workflow_template:
+          name: Exchange DAG Rebalance
+          organization: Default
+          job_args:
+            extra_vars:
+              source_server: "{{ event.payload.source_server }}"
+              target_server: "{{ event.payload.target_server }}"
+              database_name: "{{ event.payload.database_name }}"
+              failover_reason: "{{ event.payload.reason | default('unknown') }}"
+
+    # DHCP Scope Exhaustion
+    - name: DHCP Scope Near Exhaustion - Extend and Alert
+      condition: >
+        event.payload.source == "DHCP" and
+        event.payload.alert_type == "ScopeExhaustion" and
+        event.payload.available_percent < 10
+      action:
+        run_job_template:
+          name: DHCP Scope Management
+          organization: Default
+          job_args:
+            extra_vars:
+              dhcp_server: "{{ event.payload.server_name }}"
+              scope_id: "{{ event.payload.scope_id }}"
+              available_percent: "{{ event.payload.available_percent }}"
+              total_addresses: "{{ event.payload.total_addresses | default(0) }}"
+
+    # Windows DNS Server Issue
+    - name: Windows DNS Zone Transfer Failure - Retry and Alert
+      condition: >
+        event.payload.source == "DNS" and
+        event.payload.alert_type == "ZoneTransferFailure" and
+        event.payload.severity >= 3
+      action:
+        run_job_template:
+          name: Windows DNS Zone Transfer Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              dns_server: "{{ event.payload.server_name }}"
+              zone_name: "{{ event.payload.zone_name }}"
+              partner_server: "{{ event.payload.partner_server | default('') }}"
+              error_code: "{{ event.payload.error_code | default('') }}"
+
+    # =========================================================================
+    # Windows Security Events
+    # =========================================================================
+
+    # Brute Force Attack Detection (Event ID 4625 - Failed Logons)
+    - name: Windows Brute Force Detection - Block Source IP
+      condition: >
+        event.payload.source == "WindowsSecurity" and
+        event.payload.event_id == 4625 and
+        event.payload.failed_attempts > 20 and
+        event.payload.time_window_minutes <= 5
+      action:
+        run_workflow_template:
+          name: Windows Brute Force Response
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              source_ip: "{{ event.payload.source_ip }}"
+              target_account: "{{ event.payload.target_username }}"
+              failed_attempts: "{{ event.payload.failed_attempts }}"
+              logon_type: "{{ event.payload.logon_type | default('') }}"
+
+    # Unauthorized Admin Logon (Event ID 4672 - Special Privileges Assigned)
+    - name: Unauthorized Privileged Logon - Alert and Investigate
+      condition: >
+        event.payload.source == "WindowsSecurity" and
+        event.payload.event_id == 4672 and
+        event.payload.after_hours == true and
+        event.payload.subject_username is not search("SYSTEM|LOCAL SERVICE|NETWORK SERVICE")
+      action:
+        run_job_template:
+          name: Windows Privileged Logon Investigation
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              account: "{{ event.payload.subject_username }}"
+              domain: "{{ event.payload.subject_domain }}"
+              logon_time: "{{ event.payload.timestamp }}"
+              privileges: "{{ event.payload.privileges_list | default('') }}"
+
+    # Audit Policy Change (Event ID 4719)
+    - name: Security Audit Policy Changed - Alert and Revert
+      condition: >
+        event.payload.source == "WindowsSecurity" and
+        event.payload.event_id == 4719 and
+        event.payload.severity >= 4
+      action:
+        run_workflow_template:
+          name: Windows Audit Policy Enforcement
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              changed_by: "{{ event.payload.subject_username }}"
+              subcategory: "{{ event.payload.subcategory }}"
+              original_setting: "{{ event.payload.original_setting | default('') }}"
+              new_setting: "{{ event.payload.new_setting | default('') }}"
+
+    # Windows Firewall Rule Modified
+    - name: Windows Firewall Rule Modified - Validate and Alert
+      condition: >
+        event.payload.source == "WindowsSecurity" and
+        (event.payload.event_id == 4946 or
+         event.payload.event_id == 4947 or
+         event.payload.event_id == 4950) and
+        event.payload.severity >= 3
+      action:
+        run_job_template:
+          name: Windows Firewall Compliance Check
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              rule_name: "{{ event.payload.rule_name | default('') }}"
+              changed_by: "{{ event.payload.subject_username }}"
+              event_id: "{{ event.payload.event_id }}"
+              profile: "{{ event.payload.profile | default('Domain') }}"
+
+    # =========================================================================
+    # Windows System Health
+    # =========================================================================
+
+    # Windows Service Crash (Generic)
+    - name: Critical Windows Service Stopped - Auto Restart
+      condition: >
+        event.payload.source == "WindowsSystem" and
+        event.payload.event_id == 7034 and
+        event.payload.service_name is defined and
+        event.payload.severity >= 3
+      action:
+        run_job_template:
+          name: Windows Service Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              service_name: "{{ event.payload.service_name }}"
+              crash_count: "{{ event.payload.crash_count | default(1) }}"
+              service_account: "{{ event.payload.service_account | default('') }}"
+
+    # Windows Disk Space Critical
+    - name: Windows Disk Space Critical - Cleanup and Alert
+      condition: >
+        event.payload.source == "WindowsSystem" and
+        event.payload.alert_type == "DiskSpaceCritical" and
+        event.payload.free_space_percent < 10
+      action:
+        run_job_template:
+          name: Windows Disk Cleanup
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              drive_letter: "{{ event.payload.drive_letter }}"
+              free_space_percent: "{{ event.payload.free_space_percent }}"
+              free_space_gb: "{{ event.payload.free_space_gb | default(0) }}"
+
+    # Windows Update Failure
+    - name: Windows Update Failed - Retry and Report
+      condition: >
+        event.payload.source == "WindowsUpdate" and
+        event.payload.alert_type == "UpdateFailed" and
+        event.payload.severity >= 3
+      action:
+        run_job_template:
+          name: Windows Update Retry
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              update_kb: "{{ event.payload.kb_number }}"
+              update_title: "{{ event.payload.update_title | default('') }}"
+              error_code: "{{ event.payload.error_code | default('') }}"
+              is_security_update: "{{ event.payload.is_security | default(false) }}"
+
+    # Windows Pending Reboot After Patching
+    - name: Windows Pending Reboot - Schedule Maintenance Window
+      condition: >
+        event.payload.source == "WindowsUpdate" and
+        event.payload.alert_type == "PendingReboot" and
+        event.payload.days_pending > 3
+      action:
+        run_job_template:
+          name: Windows Scheduled Reboot
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              days_pending: "{{ event.payload.days_pending }}"
+              pending_updates: "{{ event.payload.pending_update_count | default(0) }}"
+              maintenance_window: "{{ event.payload.maintenance_window | default('') }}"
+
+    # Windows Memory Pressure
+    - name: Windows Memory Pressure - Investigate and Remediate
+      condition: >
+        event.payload.source == "WindowsSystem" and
+        event.payload.alert_type == "MemoryPressure" and
+        event.payload.available_memory_mb < 512
+      action:
+        run_job_template:
+          name: Windows Memory Remediation
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              available_memory_mb: "{{ event.payload.available_memory_mb }}"
+              committed_memory_percent: "{{ event.payload.committed_percent | default(0) }}"
+              top_process: "{{ event.payload.top_memory_process | default('') }}"
+
+    # Windows Certificate Expiring
+    - name: Windows Certificate Expiring - Auto Renew
+      condition: >
+        event.payload.source == "WindowsSecurity" and
+        event.payload.alert_type == "CertificateExpiring" and
+        event.payload.days_remaining <= 30
+      action:
+        run_job_template:
+          name: Windows Certificate Renewal
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.computer_name }}"
+              certificate_subject: "{{ event.payload.cert_subject }}"
+              certificate_thumbprint: "{{ event.payload.cert_thumbprint }}"
+              days_remaining: "{{ event.payload.days_remaining }}"
+              cert_store: "{{ event.payload.cert_store | default('LocalMachine\\My') }}"
+
+    # =========================================================================
+    # Hyper-V Events
+    # =========================================================================
+
+    # Hyper-V VM Crash or Unexpected Shutdown
+    - name: Hyper-V VM Crashed - Restart and Alert
+      condition: >
+        event.payload.source == "HyperV" and
+        event.payload.alert_type == "VMCrash" and
+        event.payload.severity >= 4
+      action:
+        run_workflow_template:
+          name: HyperV VM Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              hyperv_host: "{{ event.payload.host_name }}"
+              vm_name: "{{ event.payload.vm_name }}"
+              vm_id: "{{ event.payload.vm_id | default('') }}"
+              shutdown_reason: "{{ event.payload.reason | default('unexpected') }}"
+
+    # Hyper-V Replication Health Critical
+    - name: Hyper-V Replication Health Critical - Resync
+      condition: >
+        event.payload.source == "HyperV" and
+        event.payload.alert_type == "ReplicationCritical" and
+        event.payload.replication_health == "Critical"
+      action:
+        run_job_template:
+          name: HyperV Replication Resync
+          organization: Default
+          job_args:
+            extra_vars:
+              hyperv_host: "{{ event.payload.host_name }}"
+              vm_name: "{{ event.payload.vm_name }}"
+              replica_server: "{{ event.payload.replica_server | default('') }}"
+              last_replication_time: "{{ event.payload.last_replication_time | default('') }}"
+
+    # Hyper-V Host Resource Exhaustion
+    - name: Hyper-V Host Resource Exhaustion - Live Migrate VMs
+      condition: >
+        event.payload.source == "HyperV" and
+        event.payload.alert_type == "HostResourceExhaustion" and
+        (event.payload.cpu_percent > 95 or
+         event.payload.memory_percent > 95)
+      action:
+        run_workflow_template:
+          name: HyperV VM Load Balancing
+          organization: Default
+          job_args:
+            extra_vars:
+              hyperv_host: "{{ event.payload.host_name }}"
+              cpu_percent: "{{ event.payload.cpu_percent | default(0) }}"
+              memory_percent: "{{ event.payload.memory_percent | default(0) }}"
+              vm_count: "{{ event.payload.running_vm_count | default(0) }}"
+
+    # =========================================================================
+    # SCOM (System Center Operations Manager) Alerts
+    # =========================================================================
+
+    # SCOM Critical Alert - Generic Handler
+    - name: SCOM Critical Alert - Auto Remediate
+      condition: >
+        event.payload.source == "SCOM" and
+        event.payload.severity == "Critical" and
+        event.payload.resolution_state == 0 and
+        event.payload.auto_remediate == true
+      action:
+        run_workflow_template:
+          name: SCOM Alert Remediation
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.monitoring_object }}"
+              alert_name: "{{ event.payload.alert_name }}"
+              alert_id: "{{ event.payload.alert_id }}"
+              management_pack: "{{ event.payload.management_pack | default('') }}"
+              monitor_name: "{{ event.payload.monitor_name | default('') }}"
+              alert_description: "{{ event.payload.description | default('') }}"
+
+    # SCOM Heartbeat Failure
+    - name: SCOM Agent Heartbeat Failure - Restart Agent
+      condition: >
+        event.payload.source == "SCOM" and
+        event.payload.alert_type == "HeartbeatFailure" and
+        event.payload.consecutive_misses >= 3
+      action:
+        run_job_template:
+          name: SCOM Agent Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              target_host: "{{ event.payload.monitoring_object }}"
+              management_server: "{{ event.payload.management_server | default('') }}"
+              consecutive_misses: "{{ event.payload.consecutive_misses }}"
+
+    # =========================================================================
+    # Azure Monitor Integration
+    # =========================================================================
+
+    # Azure VM Not Responding
+    - name: Azure VM Unresponsive - Restart and Alert
+      condition: >
+        event.payload.source == "AzureMonitor" and
+        event.payload.alert_type == "VMAvailability" and
+        event.payload.status == "Unavailable"
+      action:
+        run_workflow_template:
+          name: Azure VM Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              vm_name: "{{ event.payload.resource_name }}"
+              resource_group: "{{ event.payload.resource_group }}"
+              subscription_id: "{{ event.payload.subscription_id | default('') }}"
+              region: "{{ event.payload.region | default('') }}"
+              alert_id: "{{ event.payload.alert_id }}"
+
+    # Azure Resource Health Degraded
+    - name: Azure Resource Health Degraded - Investigate
+      condition: >
+        event.payload.source == "AzureMonitor" and
+        event.payload.alert_type == "ResourceHealth" and
+        event.payload.availability_state == "Degraded"
+      action:
+        run_job_template:
+          name: Azure Resource Health Investigation
+          organization: Default
+          job_args:
+            extra_vars:
+              resource_name: "{{ event.payload.resource_name }}"
+              resource_type: "{{ event.payload.resource_type }}"
+              resource_group: "{{ event.payload.resource_group }}"
+              health_summary: "{{ event.payload.summary | default('') }}"
+              recommended_action: "{{ event.payload.recommended_action | default('') }}"
+
+    # =========================================================================
+    # Cluster and Failover
+    # =========================================================================
+
+    # Windows Failover Cluster Resource Failure
+    - name: Failover Cluster Resource Failed - Attempt Recovery
+      condition: >
+        event.payload.source == "FailoverCluster" and
+        event.payload.alert_type == "ResourceFailure" and
+        event.payload.resource_state == "Failed"
+      action:
+        run_workflow_template:
+          name: Windows Cluster Resource Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              cluster_name: "{{ event.payload.cluster_name }}"
+              resource_name: "{{ event.payload.resource_name }}"
+              resource_type: "{{ event.payload.resource_type | default('') }}"
+              owner_node: "{{ event.payload.owner_node }}"
+              group_name: "{{ event.payload.group_name | default('') }}"
+
+    # Windows Cluster Node Down
+    - name: Failover Cluster Node Down - Evacuate and Alert
+      condition: >
+        event.payload.source == "FailoverCluster" and
+        event.payload.alert_type == "NodeDown" and
+        event.payload.severity >= 4
+      action:
+        run_workflow_template:
+          name: Windows Cluster Node Recovery
+          organization: Default
+          job_args:
+            extra_vars:
+              cluster_name: "{{ event.payload.cluster_name }}"
+              failed_node: "{{ event.payload.node_name }}"
+              remaining_nodes: "{{ event.payload.remaining_node_count | default(0) }}"
+              quorum_status: "{{ event.payload.quorum_status | default('') }}"
+
+    # =========================================================================
+    # Catch-All and Logging
+    # =========================================================================
+
+    # Log all high severity Microsoft events for visibility
+    - name: Log All Critical Microsoft Events
+      condition: >
+        event.payload.source is defined and
+        event.payload.source is search("ActiveDirectory|WindowsSecurity|WindowsSystem|SQLServer|Exchange|IIS|HyperV|SCOM|AzureMonitor|FailoverCluster",
+                                        ignorecase=true) and
+        event.payload.severity is defined and
+        event.payload.severity >= 5
+      action:
+        print_event:
+          pretty: true
