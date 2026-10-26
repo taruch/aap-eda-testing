@@ -5,7 +5,7 @@
     - servicenow.itsm.records:
         table: incident
         interval: 30
-        sysparm_query: "active=true^state=1^u_automated_remediation=true"
+        sysparm_query: " active=true^state=1^u_automated_remediation=true^work_notesISEMPTY"
         remote_servicenow_timezone: "US/Eastern"
 
   match_multiple_rules: false
