@@ -5,7 +5,7 @@
     - servicenow.itsm.records:
         table: incident
         interval: 30
-        sysparm_query: " active=true^state=1^u_automated_remediation=true^work_notesISEMPTY"
+        sysparm_query: "active=true^state=1^work_notesNOT LIKE[AAP-REVIEWED]"
         remote_servicenow_timezone: "US/Eastern"
 
   match_multiple_rules: false
@@ -17,67 +17,91 @@
         event.category == "software" and
         event.subcategory == "application" and
         (event.priority == "1" or event.priority == "2")
-      action:
-        run_workflow_template:
-          name: Application Emergency Restart
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              configuration_item: "{{ event.configuration_item | default('') }}"
-              business_service: "{{ event.business_service | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_workflow_template:
+            name: Application Emergency Restart
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                configuration_item: "{{ event.configuration_item | default('') }}"
+                business_service: "{{ event.business_service | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- Known Issue: Database Performance ---
     - name: Database Performance - Run Optimization
       condition: >
         event.category == "database" and
         event.subcategory == "performance"
-      action:
-        run_job_template:
-          name: Database Performance Tuning
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              target_database: "{{ event.configuration_item | default('') }}"
-              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_job_template:
+            name: Database Performance Tuning
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                target_database: "{{ event.configuration_item | default('') }}"
+                cmdb_ci: "{{ event.cmdb_ci | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- Known Issue: Storage Capacity ---
     - name: Storage Capacity Critical - Auto Cleanup
       condition: >
         event.category == "storage" and
         event.subcategory == "capacity"
-      action:
-        run_job_template:
-          name: Storage Cleanup and Archival
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              storage_device: "{{ event.configuration_item | default('') }}"
-              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_job_template:
+            name: Storage Cleanup and Archival
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                storage_device: "{{ event.configuration_item | default('') }}"
+                cmdb_ci: "{{ event.cmdb_ci | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- Known Issue: Network Connectivity ---
     - name: Network Connectivity - Restart Interface
       condition: >
         event.category == "network" and
         event.subcategory == "connectivity"
-      action:
-        run_job_template:
-          name: Network Interface Restart
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              affected_device: "{{ event.configuration_item | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_job_template:
+            name: Network Interface Restart
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                affected_device: "{{ event.configuration_item | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- Known Issue: Security - Brute Force ---
     - name: Security - Block Brute Force Attack
@@ -85,81 +109,111 @@
         event.category == "security" and
         event.subcategory == "authentication" and
         event.short_description is search("(?i)brute force|failed login")
-      action:
-        run_job_template:
-          name: Firewall Block Malicious IP
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              firewall_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_job_template:
+            name: Firewall Block Malicious IP
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                firewall_ci: "{{ event.cmdb_ci | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- Known Issue: SSL Certificate Expiry ---
     - name: Certificate Expiring - Auto Renew
       condition: >
         event.category == "security" and
         event.subcategory == "certificates"
-      action:
-        run_job_template:
-          name: Certificate Auto Renewal
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              cert_manager: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_job_template:
+            name: Certificate Auto Renewal
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                cert_manager: "{{ event.cmdb_ci | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- Known Issue: Backup Failures ---
     - name: Backup Failure - Retry with Cleanup
       condition: >
         event.category == "backup" and
         event.subcategory == "job failure"
-      action:
-        run_job_template:
-          name: Backup Cleanup and Retry
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              backup_server: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_job_template:
+            name: Backup Cleanup and Retry
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                backup_server: "{{ event.cmdb_ci | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- Known Issue: Kubernetes Pod Issues ---
     - name: Kubernetes Pod CrashLoop - Restart
       condition: >
         event.category == "platform" and
         event.subcategory == "kubernetes"
-      action:
-        run_job_template:
-          name: Kubernetes Pod Recovery
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              k8s_cluster: "{{ event.configuration_item | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
+      actions:
+        - run_job_template:
+            name: Kubernetes Pod Recovery
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                k8s_cluster: "{{ event.configuration_item | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
 
     # --- AI FALLBACK: Unmatched incidents go to AI for triage ---
     - name: AI Triage - Evaluate Unmatched Incident
       condition: event.number is defined
-      action:
-        run_job_template:
-          name: AI Triage and Analysis from ServiceNow
-          organization: Default
-          job_args:
-            extra_vars:
-              incident_number: "{{ event.number }}"
-              incident_sys_id: "{{ event.sys_id }}"
-              category: "{{ event.category | default('') }}"
-              subcategory: "{{ event.subcategory | default('') }}"
-              priority: "{{ event.priority | default('') }}"
-              configuration_item: "{{ event.configuration_item | default('') }}"
-              cmdb_ci: "{{ event.cmdb_ci | default('') }}"
-              short_description: "{{ event.short_description | default('') }}"
-              description: "{{ event.description | default('') }}"
-              business_service: "{{ event.business_service | default('') }}"
+      actions:
+        - run_job_template:
+            name: AI Triage and Analysis from ServiceNow
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
+                incident_sys_id: "{{ event.sys_id }}"
+                category: "{{ event.category | default('') }}"
+                subcategory: "{{ event.subcategory | default('') }}"
+                priority: "{{ event.priority | default('') }}"
+                configuration_item: "{{ event.configuration_item | default('') }}"
+                cmdb_ci: "{{ event.cmdb_ci | default('') }}"
+                short_description: "{{ event.short_description | default('') }}"
+                description: "{{ event.description | default('') }}"
+                business_service: "{{ event.business_service | default('') }}"
+        - run_job_template:
+            name: SERVICENOW / Add Enrichment Note
+            organization: Default
+            job_args:
+              extra_vars:
+                incident_number: "{{ event.number }}"
